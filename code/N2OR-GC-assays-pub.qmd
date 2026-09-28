@@ -1,0 +1,1883 @@
+---
+title: "N2OR_GC_assays-pub"
+author: "Elise Rivett"
+date: "2026-01-06"
+output: html_document
+---
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+# Goal: Analyze GC-ECD and GC-IRMS data for N~2~O reduction to N~2~ by purified *Pseudomonas stutzeri* (aka *Stutzerimonas stutzeri*) nitrous oxide reductase (N2OR).
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Load packages.
+```{r load_packages}
+library(ggplot2) #For making pretty graphs
+library(tidyverse) #For data tidying (changing dataframe organization, etc)
+library(modelr) #provides rmse() function
+library(egg) #provides a way to save ggplots with specified sizes
+library(plotrix) #allows for standard error of the mean calculations
+library(here) #Used to create file paths relative to top-level directory.
+library(outliers) #used for Grubbs' test for outliers
+library(nlstools) #provides preview function and other functions for nls models
+```
+
+#Naming conventions
+
+Bulk N ($\delta$^15^N^bulk^) is abbreviated as delta_N.
+
+
+$\delta$^18^O^N~2~O = delta_18O
+
+"Fractionation factor" (normally abbreviated as $\alpha$) is abbreviated as `ff` to avoid confusion with N^$\alpha$^.
+
+Other Greek letters are spelled out in object names. For example:
+
+Enrichment factor ($\epsilon$) = `epsilon`
+
+Other abbreviations
+
+- lm    linear regression model
+
+- KIE   kinetic isotope effect
+
+- sd    standard deviation
+
+- se    standard error
+
+- SP    site preference
+
+#Import ECD_samples: GC-ECD input table
+
+- Samples collected 9/29/2025 and 10/14/2025 (69 samples total)
+  - N2OR_2 timepoints 40, 45, and 60 min removed - more N2O was accidentally added to rxn bottle 2 before the 40 min timepoint
+- Use this table as the input table for all subsequent analysis with GC-ECD data.
+- Use the data in this table to plot Figure 2.
+```{r import_ECD_samples}
+ECD_samples <- read.table(here("data/input/ECD_samples.csv"),sep = ",", header = TRUE )
+```
+
+#Make initial_N2O table with average initial N2O +/- sd for each replicate and overall average for all 6 replicates
+```{r initial_N2O}
+#Make table with initial N_s0 and sd_N_s0 for each replicate.
+initial_N2O <- tibble(
+  Replicate = vector(length = 7, mode = "expression"),
+  Data = vector(length = 7, mode = "expression"),
+  Time_min = vector(length = 7, mode = "numeric"),
+  N_s0 = vector(length = 7, mode = "numeric"),
+  sd_N_s0 = vector(length = 7, mode = "numeric")
+)
+
+#Fill table
+initial_N2O <- initial_N2O %>% mutate(
+  Replicate = c(
+    "N2OR_1", "N2OR_2", "N2OR_3","no_enzyme_1", "no_enzyme_2", "no_enzyme_3", "All"
+  ),
+  
+  Data = c(
+    rep("average of 2 initial measurements", 6),
+    "average of all 6 initial measurements"
+  ),
+  
+  Time_min = 0
+)
+
+#For each replicate, calculate initial N2O (N_s0).
+##N_s0 is the average of the 0 timepoints.
+
+##N2OR_1
+initial_N2O$N_s0[(which(initial_N2O$Replicate == "N2OR_1"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_2
+initial_N2O$N_s0[(which(initial_N2O$Replicate == "N2OR_2"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_3
+initial_N2O$N_s0[(which(initial_N2O$Replicate == "N2OR_3"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_1
+initial_N2O$N_s0[(which(initial_N2O$Replicate == "no_enzyme_1"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_2
+initial_N2O$N_s0[(which(initial_N2O$Replicate == "no_enzyme_2"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_3
+initial_N2O$N_s0[(which(initial_N2O$Replicate == "no_enzyme_3"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+#Overall average: Use time 0 measurements for no_enzyme_control 1-3 and N2OR1-3
+initial_N2O$N_s0[(which(initial_N2O$Replicate == "All"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+#For each replicate, calculate standard deviation (sd) for initial N2O (sd_N_s0).
+##N_s0 is the average of the 0 timepoints.
+##N2OR_1
+initial_N2O$sd_N_s0[(which(initial_N2O$Replicate == "N2OR_1"))] = 
+  sd(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_2
+initial_N2O$sd_N_s0[(which(initial_N2O$Replicate == "N2OR_2"))] = 
+  sd(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_3
+initial_N2O$sd_N_s0[(which(initial_N2O$Replicate == "N2OR_3"))] = 
+  sd(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_1
+initial_N2O$sd_N_s0[(which(initial_N2O$Replicate == "no_enzyme_1"))] = 
+  sd(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_2
+initial_N2O$sd_N_s0[(which(initial_N2O$Replicate == "no_enzyme_2"))] = 
+  sd(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_3
+initial_N2O$sd_N_s0[(which(initial_N2O$Replicate == "no_enzyme_3"))] = 
+  sd(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+#Overall sd: Use time 0 measurements for no_enzyme_control 1-3 and N2OR1-3
+initial_N2O$sd_N_s0[(which(initial_N2O$Replicate == "All"))] = 
+  sd(
+  unlist(select(
+    filter(ECD_samples, Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+(initial_N2O)
+```
+
+#Make color-blind palettes for ggplot.
+```{r cbPalette_repeat}
+#http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/#a-colorblind-friendly-palette
+
+# The palette with grey:
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# The palette with black:
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# To use for fills, add
+  #scale_fill_manual(values=cbPalette)
+
+# To use for line and point colors, add
+  #scale_colour_manual(values=cbPalette)
+```
+
+#Figure 2. Plot Total N2O umol (excluding spiked samples) vs Time_min (initial timepoints  = 0 min) for ppt; plot initial average N2O for each replicate (N_s0)
+```{r plot_total_N2O_v_time_min_N_s0}
+ECD_reorg <- rbind(
+  filter(ECD_samples, Replicate == "N2OR_1"),
+  filter(ECD_samples, Replicate == "N2OR_2"),
+  filter(ECD_samples, Replicate == "N2OR_3"),
+  filter(ECD_samples, Replicate == "no_enzyme_1"),
+  filter(ECD_samples, Replicate == "no_enzyme_2"),
+  filter(ECD_samples, Replicate == "no_enzyme_3")
+)
+  
+#Add new column to table that combines N_s0 at time = 0 with Total_N2O_umol at all other timepoints
+
+##N_s0 is the average of the 0 timepoints measured for an individual replicate.
+
+ECD_reorg_2 <- ECD_reorg %>% mutate(
+  y_N2O = 0
+)
+
+n = length(ECD_reorg_2$y_N2O)
+
+for (i in 1:n) {
+  if(ECD_reorg_2$Time_min[i] == 0) {
+    ECD_reorg_2$y_N2O[i] = ECD_reorg_2$N_s0[i]
+  }
+    else if(ECD_reorg_2$Time_min[i] >0) {
+    ECD_reorg_2$y_N2O[i] = ECD_reorg_2$Total_N2O_umole[i]
+    }
+}
+
+(plot_total_N2O_v_time_N_s0 <- 
+  ggplot()+
+   geom_point(data = ECD_reorg_2, mapping = 
+         aes(x = Time_min, y = y_N2O, shape = Replicate, color = Replicate), size = 2)+
+    
+   
+   geom_vline(data = ECD_reorg, mapping = aes(xintercept = 0))+
+   
+    scale_color_manual(name = "Replicate",
+    values = c("#000000", "#B94685", "#56B4E9","#1E5C19", "#D55E00", "#999999"),
+    labels = c(
+    expression(paste(bold(N[2]), bold("OR 1"))),
+    expression(paste(bold(N[2]), bold("OR 2"))),
+    expression(paste(bold(N[2]), bold("OR 3"))),    
+    expression(paste(bold("No Enzyme 1"))),
+    expression(paste(bold("No Enzyme 2"))),
+    expression(paste(bold("No Enzyme 3")))  
+  ))+
+ 
+  scale_shape_manual(name = "Replicate",
+    values = c(16, 16, 16, 8, 8, 8),
+    labels = c(
+    expression(paste(bold(N[2]), bold("OR 1"))),
+    expression(paste(bold(N[2]), bold("OR 2"))),
+    expression(paste(bold(N[2]), bold("OR 3"))),    
+    expression(paste(bold("No Enzyme 1"))),
+    expression(paste(bold("No Enzyme 2"))),
+    expression(paste(bold("No Enzyme 3")))  
+  ))+  
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 16))+
+  theme(axis.text = element_text(size = 16))+
+  xlab(expression(paste(bold("Time (min)"))))+
+  ylab(expression(paste(bold(N[2]), bold("O"),bold (" ("), bold( mu),bold("mol) "), sep="")))+    
+  
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+
+)
+
+
+ggsave(plot_total_N2O_v_time_N_s0, filename = here("graphs/plot_total_N2O_v_time_N_s0.tiff"), height = 3.5, width = 6, units = "in")
+```
+
+#Fit models to ECD data for N2OR1-3 using Total_N2O_umole as the dependent variable (y = A = Total_N2O_umole).
+
+- Use the rate constant (k) determined for each replicate to calculate Total_N2O_umole and f for IRMS data.
+
+##Exponential decay formula
+A = A_0*e^(-kt)
+where
+
+- A = N2O umol = Total_N2O_umole = N2O in rxn bottle + N2O removed during previous sampling for ECD
+- A_0 = initial N2O umol = N_s0
+- k = rate constant
+- t = time (min)
+
+##Note: I get an error when I try to use N_s0 as a parameter name.
+```{r exp_decay_model}
+#Define exponential decay formula
+exp_decay <- as.formula(Total_N2O_umole ~A_0*exp(-k*Time_min))
+
+#N2OR_1
+##preview model fit to test the starting values of the model parameters (A_0, k) 
+preview(exp_decay, data = filter(ECD_samples, Replicate == "N2OR_1"),
+                                 start = list(A_0 = 4, k = 0.04), variable = 6)
+
+##fit and name exponential decay model for N2OR_1
+exp_decay_N2OR_1 <- nls(exp_decay, data = filter(ECD_samples, Replicate == "N2OR_1"), start = list(A_0 = 4, k = 0.04))
+
+summary(exp_decay_N2OR_1)
+(rmse(exp_decay_N2OR_1, data = filter(ECD_samples, Replicate == "N2OR_1")))
+
+#N2OR_2
+##preview model fit to test the starting values of the model parameters (A_0, k) 
+preview(exp_decay, data = filter(ECD_samples, Replicate == "N2OR_2"),
+                                 start = list(A_0 = 4, k = 0.04), variable = 6)
+
+##fit and name exponential decay model for N2OR_2
+exp_decay_N2OR_2 <- nls(exp_decay, data = filter(ECD_samples, Replicate == "N2OR_2"), start = list(A_0 = 4, k = 0.04))
+
+summary(exp_decay_N2OR_2)
+(rmse(exp_decay_N2OR_2, data = filter(ECD_samples, Replicate == "N2OR_2")))
+
+#N2OR_3
+##preview model fit to test the starting values of the model parameters (A_0, k) 
+preview(exp_decay, data = filter(ECD_samples, Replicate == "N2OR_3"),
+                                 start = list(A_0 = 4, k = 0.04), variable = 6)
+
+##fit and name exponential decay model for N2OR_3
+exp_decay_N2OR_3 <- nls(exp_decay, data = filter(ECD_samples, Replicate == "N2OR_3"), start = list(A_0 = 4, k = 0.04))
+
+summary(exp_decay_N2OR_3)
+(rmse(exp_decay_N2OR_3, data = filter(ECD_samples, Replicate == "N2OR_3")))
+```
+Preview graph: actual values  - black circles; predicted values - red +
+The dependent variable (Total_N2O_umole) is plotted on the y-axis.
+An independent variable (of our choosing) is plotted on the x-axis. In this case, the independent variable is time. (Set by the 'variable = 6' argument in the preview function; Time_min is the 6th column in the dataset.)
+
+Parameters A_0 and k are pretty close to Excel's estimates for all three replicates
+
+#Make table with predicted total N2O values (predicted using exponential decay models) for N2OR1-3
+```{r ECD_samples_pred}
+ECD_samples_pred <- select(
+  filter(ECD_samples, Replicate == "N2OR_1" | Replicate == "N2OR_2" | Replicate == "N2OR_3"), 
+  Sample_name, Replicate, Time_min, Total_N2O_umole, N_s0) %>%
+  
+  mutate(
+    Total_N2O_umole_pred = c(
+      predict(exp_decay_N2OR_1),
+      predict(exp_decay_N2OR_2),
+      predict(exp_decay_N2OR_3)
+    )
+  )
+
+(ECD_samples_pred)
+```
+
+#Plot actual N2O vs time for N2OR rxns 1-3 and fit exponential decay curves (in red) (analyze each replicate individually).
+```{r plot_N2OR_rxns_pred_curve}
+#Select rxns with N2OR
+ECD_N2OR_rxns <- ECD_samples %>% filter(Replicate == "N2OR_1" | Replicate == "N2OR_2" | Replicate == "N2OR_3")
+
+#Plot
+(plot_N2OR_rxns_pred <- ggplot()+
+  #Plot actual values
+  geom_point(data = ECD_N2OR_rxns, mapping = 
+         aes(x = Time_min, y = Total_N2O_umole), shape = 1, size = 2)+
+  #Plot predicted values
+    geom_line(data = ECD_samples_pred, mapping = 
+         aes(x = Time_min, y = Total_N2O_umole_pred), color = "red")+
+
+  facet_wrap(~`Replicate`, nrow = 1)+
+    
+   geom_vline(data = ECD_N2OR_rxns, mapping = aes(xintercept = 0))+
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 16))+
+  theme(axis.text = element_text(size = 16))+
+  xlab(expression(paste(bold("Time (min)"))))+
+  ylab(expression(paste(bold(N[2]), bold("O"),bold (" ("), bold( mu),bold("mol) "), sep="")))+
+  
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))+
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+  theme(axis.title.y=element_text(margin=margin(0,20,0,0),size=12,face="bold",angle=90,hjust=0.5,vjust=1.1))+
+  theme(axis.title.x=element_text(margin=margin(10,20,0,0),size=12,face="bold"))
+)    
+
+ggsave(plot_N2OR_rxns_pred, filename = here("graphs/plot_N2OR_rxns_pred.tiff"), height = 4, width = 6, units = "in")
+```
+
+#Import IRMS data
+
+The same reaction bottles with purified N2OR were sampled for GC-ECD and for GC-IRMS. GC-ECD concentration measurements were plotted vs time and used to back-calculate N~2~O concentrations in IRMS samples.
+
+- 9/29/2025 Experiments
+  - Controls
+    - no_enzyme_1 (12 samples; 0-60 min)
+    - no_enzyme_2 (11 samples; 0-45 min)
+  - Rxns with enzyme
+    - N2OR_1 (11 samples; 0-45 min)
+    - N2OR_2 (9 samples; 0-35 min)
+  
+- 10/14/2025 Experiments
+  - Controls
+    - no_enzyme_3 (12 samples; 0-60 min)
+  -Rxn with enzyme
+    - N2OR_3 (12 samples, 0-60 min)
+
+- 67 samples total
+```{r import_IRMS_data}
+IRMS_all <- read.table(here("data/input/IRMS_input_2025-11-25.csv"),sep = ",", header = TRUE )
+```
+
+#IRMS: Remove unneeded data and add N_s0 (calculated from ECD data)
+
+- Rows where detector was saturated (no isotopic data was collected)
+  - Sample_name: rep 3 02
+  - Sample_name: rep 3 60 min
+  
+- N_s0 = average of the two time = 0 Total_N2O_umole measurements from the ECD data
+
+```{r IRMS}
+IRMS <- IRMS_all %>%
+  #Remove samples where detector was saturated
+  filter(
+    Sample_name != "rep 3 02" &
+    Sample_name != "rep 3 60 min"
+) %>%
+  
+  #Change class of delta_N to numeric. (For some reason, the class was set to "character" when the data was imported.)
+  mutate(
+    delta_N = as.numeric(delta_N)
+  )
+  
+#Add N_s0 to table (average of Total_N2O_umole from initial ECD measurements)
+##Add empty column for N_s0
+IRMS$N_s0 = 0
+
+##no_enzyme_1
+IRMS$N_s0[(which(IRMS$Replicate == "no_enzyme_1"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_2
+IRMS$N_s0[(which(IRMS$Replicate == "no_enzyme_2"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##no_enzyme_3
+IRMS$N_s0[(which(IRMS$Replicate == "no_enzyme_3"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "no_enzyme_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_1
+IRMS$N_s0[(which(IRMS$Replicate == "N2OR_1"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_2
+IRMS$N_s0[(which(IRMS$Replicate == "N2OR_2"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_3
+IRMS$N_s0[(which(IRMS$Replicate == "N2OR_3"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+```
+
+#IRMS: Convert delta values to R values and add the R values to the table.
+
+R_std values for Elementar IRMS taken from Skrzypek, G. and Dunn, P. J. H.: Absolute isotope ratios defining isotope scales used in isotope ratio mass spectrometers and optical isotope instruments, Rapid Commun. Mass. Sp., 34, e8890,
+https://doi.org/10.1002/rcm.8890, 2020.
+
+```{r IRMS_add_R}
+IRMS <- IRMS %>% mutate(
+ R_std_N = 0.0036765, #R (15N/14N) for atmospheric N2
+ R_N = (delta_N/1000 + 1)*R_std_N,
+ R_alpha = (delta_alpha/1000 + 1)*R_std_N,
+ R_beta = (delta_beta/1000 + 1)*R_std_N,
+ R_SP = (SP/1000 + 1)*R_std_N,
+ 
+ R_std_18O = 0.00200520, #R (18O/16O) for VSMOW
+ R_18O = (delta_18O/1000 + 1)*R_std_18O
+)
+```
+
+#Calculate delta_s0_meas (average of measured initial delta values) for delta_N, delta_alpha, delta_beta, and delta_18O. Use time 0 measurements for both controls and reactions with N2OR.
+
+- The measured delta_so values from Table 2 were calculated here.
+```{r delta_s0_meas_all_data}
+#n = number of delta types; in this case, n = 5
+n <- 5
+
+#m = number of models; in this case, m = 1 because we're only using one model/method to calculate delta_s0_meas
+
+m <- 1
+
+
+#Make blank table with mean and standard error for initial delta values
+initial_deltas <- tibble(
+    Model = vector(length = n*m, mode = "expression"),
+    Data = vector(length = n*m, mode = "expression"),
+    Replicate = vector(length = n*m, mode = "expression"),
+    Delta_type = vector(length = n*m, mode = "expression"),
+
+    delta_s0_meas = vector(length = n*m, mode = "numeric"),
+    se_delta_s0_meas = vector(length = n*m, mode = "numeric")
+)
+
+#Add info to table
+initial_deltas <- initial_deltas %>% mutate(
+  Model = "Average all time = 0 measurements",
+  Data = c(
+    "N2OR Replicates 1-3 and No Enzyme Controls 1-3"
+),
+
+  Replicate = "all data pooled",
+
+  Delta_type = c(
+    "delta_N",
+    "delta_alpha",
+    "delta_beta",
+    "SP",
+    "delta_18O"
+  )
+)
+
+
+#Use time 0 measurements for no_enzyme_control 1-3 and N2OR1-3
+#Mean delta_s0 value for delta_N (bulk)
+initial_deltas$delta_s0_meas[1] = 
+  mean(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_N)
+)
+)
+
+#Mean delta_s0 value for delta_alpha
+initial_deltas$delta_s0_meas[2] = 
+  mean(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_alpha)
+)
+)
+  
+#Mean delta_s0 value for delta_beta
+initial_deltas$delta_s0_meas[3] =
+  mean(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_beta)
+)
+)
+  
+#Mean delta_s0 value for SP
+initial_deltas$delta_s0_meas[4] =
+  mean(
+  unlist(select(
+    filter(IRMS, Time_min == 0), SP)
+)
+)
+  
+#Mean delta_s0 value for delta_18O
+initial_deltas$delta_s0_meas[5] =
+  mean(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_18O)
+)
+)
+
+#Standard error calcs: Use time 0 measurements for no_enzyme_control 1-3 and N2OR1-3
+#Standard error for delta_s0 value for delta_N (bulk)
+initial_deltas$se_delta_s0_meas[1] = 
+  std.error(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_N)
+)
+)
+
+#std.error delta_s0 value for delta_alpha
+initial_deltas$se_delta_s0_meas[2] = 
+  std.error(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_alpha)
+)
+)
+  
+#std.error delta_s0 value for delta_beta
+initial_deltas$se_delta_s0_meas[3] =
+  std.error(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_beta)
+)
+)
+  
+#std.error delta_s0 value for SP
+initial_deltas$se_delta_s0_meas[4] =
+  std.error(
+  unlist(select(
+    filter(IRMS, Time_min == 0), SP)
+)
+)
+  
+#std.error delta_s0 value for delta_18O
+initial_deltas$se_delta_s0_meas[5] =
+  std.error(
+  unlist(select(
+    filter(IRMS, Time_min == 0), delta_18O)
+)
+)
+
+(initial_deltas)
+```
+
+#IRMS: Add initial delta values to table and calculate corresponding initial R values.
+
+- Initial deltas were calculated by averaging the initial delta values from all 6 replicates (3 controls + 3 w/ enzyme).
+```{r IRMS_add_initial_deltas}
+IRMS <- IRMS %>%
+  mutate(
+    delta_N_0 =
+      initial_deltas$delta_s0_meas[which(initial_deltas$Delta_type == "delta_N")],
+    
+    delta_alpha_0 = 
+      initial_deltas$delta_s0_meas[which(initial_deltas$Delta_type == "delta_alpha")],
+    
+    delta_beta_0 = 
+    initial_deltas$delta_s0_meas[which(initial_deltas$Delta_type == "delta_beta")],
+    
+    SP_0 = initial_deltas$delta_s0_meas[which(initial_deltas$Delta_type == "SP")],
+    
+    delta_18O_0 = initial_deltas$delta_s0_meas[which(initial_deltas$Delta_type == "delta_18O")],
+    
+    #Convert delta values to R values
+    R_N_0 = (delta_N_0/1000 + 1)*R_std_N,
+    R_alpha_0 = (delta_alpha_0/1000 + 1)*R_std_N,
+    R_beta_0 = (delta_beta_0/1000 + 1)*R_std_N,
+    R_SP_0 = (SP_0/1000 + 1)*R_std_N,
+    R_18O_0 = (delta_18O_0/1000 + 1)*R_std_18O
+  )
+```
+
+
+#IRMS_N2OR_rxns: Calculate N2O umol, f, etc
+##Use these f values for all subsequent (Rayleigh) calculations
+
+Total_N2O_umole = A = N_s0*e^(-kt)
+  - N_s0 = initial N2O = average of Total_N2O_umole for the two ECD measurements taken at time = 0
+  - k = rate constant from exponential decay model
+  - t = Time_min
+  
+##Note: In theory, we could also use A_0 as the initial N2O value.
+  - A_0 = coefficient from exponential decay model = summary(exp_decay_N2OR_1)$coefficients[1,1]
+  - However, the exponential decay model slightly underestimates initial N2O (A_0 < N_s0). This leads to f values that are slightly lower than they should be.
+  - For example, at time = 0, f should equal 1: f = N_s0/N_s0. But if we use A_0,
+  f is defined as A_0/N_s0, causing f to be less than 1 (i.e., f = 0.97). This is misleading because it makes it look like the time 0 IRMS measurements were actually taken after the reaction was started.
+```{r IRMS_N2OR_rxns}
+IRMS_N2OR_rxns <- IRMS %>% filter(
+  Replicate == "N2OR_1" | Replicate == "N2OR_2" | Replicate == "N2OR_3"
+) %>%
+  mutate(
+    #Add empty columns for A_0 and k (coefficients from exponential decay model)
+    A_0 = 0,
+    k = 0
+  )
+
+#Add A_0 and k determined from exponential decay model fitted to ECD data
+##N2OR_1
+IRMS_N2OR_rxns$A_0[which(IRMS_N2OR_rxns$Replicate == "N2OR_1")] = summary(exp_decay_N2OR_1)$coefficients[1,1]
+
+IRMS_N2OR_rxns$k[which(IRMS_N2OR_rxns$Replicate == "N2OR_1")] = summary(exp_decay_N2OR_1)$coefficients[2,1]
+
+##N2OR_2
+IRMS_N2OR_rxns$A_0[which(IRMS_N2OR_rxns$Replicate == "N2OR_2")] = summary(exp_decay_N2OR_2)$coefficients[1,1]
+
+IRMS_N2OR_rxns$k[which(IRMS_N2OR_rxns$Replicate == "N2OR_2")] = summary(exp_decay_N2OR_2)$coefficients[2,1]
+
+##N2OR_3:
+IRMS_N2OR_rxns$A_0[which(IRMS_N2OR_rxns$Replicate == "N2OR_3")] = summary(exp_decay_N2OR_3)$coefficients[1,1]
+
+IRMS_N2OR_rxns$k[which(IRMS_N2OR_rxns$Replicate == "N2OR_3")] = summary(exp_decay_N2OR_3)$coefficients[2,1]
+
+#Add Total_N2O_umole calculated using A_0 and k coefficients from exponential decay model (fitted to ECD data)
+
+IRMS_N2OR_rxns <- IRMS_N2OR_rxns %>% mutate(
+  Total_N2O_umole = N_s0*exp(-k*Time_min),
+  
+  #Calculate f where N_s = Total_N2O_umole (calc'd from exp. decay model) and N_s0 = average of the two 0 timepoints from the ECD data
+  f = Total_N2O_umole/N_s0,
+  one_minus_f = 1-f,
+  lnf = log(f)  
+)
+
+#Write table to csv
+##One of the SI tables will be a subset of this table.
+write.csv(IRMS_N2OR_rxns, here("data/output/IRMS_N2OR_rxns.csv"), row.names = TRUE)
+```
+
+#Table S4 (N2OR): Write table with delta values and f values for SI.
+```{r SI_delta_table}
+
+(SI_N2OR_rxns_deltas <- IRMS_N2OR_rxns %>%
+  mutate(
+
+    N2O_umol = c(
+    paste(round(as.numeric(IRMS_N2OR_rxns$Total_N2O_umole), 2))
+    ),
+    
+    f = c(
+    paste(round(as.numeric(IRMS_N2OR_rxns$f), 2))
+    ),
+    
+    delta_18O =
+      paste(round(as.numeric(IRMS_N2OR_rxns$delta_18O), 1)),
+    
+    delta_N =
+      paste(round(as.numeric(IRMS_N2OR_rxns$delta_N), 1)),
+    
+    delta_alpha =
+      paste(round(as.numeric(IRMS_N2OR_rxns$delta_alpha), 1)),
+    
+    delta_beta =
+      paste(round(as.numeric(IRMS_N2OR_rxns$delta_beta), 1)),
+    
+    SP =
+      paste(round(as.numeric(IRMS_N2OR_rxns$SP), 1))    
+  ) %>%
+   
+   dplyr::select(
+     Sample_ID, Sample_name, Replicate, Time_min, N2O_umol, f, delta_18O, delta_N, delta_alpha, delta_beta, SP
+   )
+
+)
+
+#Write table to output folder
+write.csv(SI_N2OR_rxns_deltas, here("data/output/SI_N2OR_rxns_deltas.csv"), row.names = TRUE)
+
+```
+#Table with calculated N_s0 and exponential decay model coefficients
+
+Total_N2O_umole = A = N_s0*e^(-kt)
+  - N_s0 = initial N2O = average of Total_N2O_umole for the two ECD measurements taken at time = 0
+  - k = rate constant from exponential decay model
+  - t = Time_min
+  
+Also list A_0 coefficient from exponential decay model for comparison
+```{r exp_decay_coeff}
+#n = number of replicates
+n <- 3
+
+#m = number of models
+m <- 1
+
+exp_decay_coeff <- tibble(
+    Model = vector(length = n*m, mode = "expression"),
+    Replicate = vector(length = n*m, mode = "expression"),
+
+    N_s0 = vector(length = n*m, mode = "numeric"),
+    se_N_s0 = vector(length = n*m, mode = "numeric"),
+    
+    A_0 = vector(length = n*m, mode = "numeric"),
+    se_A_0 = vector(length = n*m, mode = "numeric"),
+    
+    k = vector(length = n*m, mode = "numeric"),
+    se_k = vector(length = n*m, mode = "numeric")
+)
+
+exp_decay_coeff <- exp_decay_coeff %>% mutate(
+  Model = "Total_N2O_umole=N_s0*e^(-kt); A_0 = exponential decay coeff; N_s0 = measured intial N2O umol",
+  
+  Replicate  = c("N2OR_1", "N2OR_2", "N2OR_3")
+)
+
+#Add N_s0 values (average the two initial Total_N2O_umole measurements for each replicate)
+##N2OR_1
+exp_decay_coeff$N_s0[(which(exp_decay_coeff$Replicate == "N2OR_1"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_2
+exp_decay_coeff$N_s0[(which(exp_decay_coeff$Replicate == "N2OR_2"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_3
+exp_decay_coeff$N_s0[(which(exp_decay_coeff$Replicate == "N2OR_3"))] = 
+  mean(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+#Add standard error for N_s0 values
+##N2OR_1
+exp_decay_coeff$se_N_s0[(which(exp_decay_coeff$Replicate == "N2OR_1"))] = 
+  std.error(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_1" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_2
+exp_decay_coeff$se_N_s0[(which(exp_decay_coeff$Replicate == "N2OR_2"))] = 
+  std.error(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_2" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+##N2OR_3
+exp_decay_coeff$se_N_s0[(which(exp_decay_coeff$Replicate == "N2OR_3"))] = 
+  std.error(
+  unlist(select(
+    filter(ECD_samples, Replicate == "N2OR_3" & Total_time_min < 0), Total_N2O_umole)
+)
+)
+
+#Add A_0 and k determined from exponential decay model fitted to ECD data
+##N2OR_1
+exp_decay_coeff$A_0[which(exp_decay_coeff$Replicate == "N2OR_1")] = summary(exp_decay_N2OR_1)$coefficients[1,1]
+
+exp_decay_coeff$se_A_0[which(exp_decay_coeff$Replicate == "N2OR_1")] = summary(exp_decay_N2OR_1)$coefficients[1,2]
+
+exp_decay_coeff$k[which(exp_decay_coeff$Replicate == "N2OR_1")] = summary(exp_decay_N2OR_1)$coefficients[2,1]
+
+exp_decay_coeff$se_k[which(exp_decay_coeff$Replicate == "N2OR_1")] = summary(exp_decay_N2OR_1)$coefficients[2,2]
+
+##N2OR_2
+exp_decay_coeff$A_0[which(exp_decay_coeff$Replicate == "N2OR_2")] = summary(exp_decay_N2OR_2)$coefficients[1,1]
+
+exp_decay_coeff$se_A_0[which(exp_decay_coeff$Replicate == "N2OR_2")] = summary(exp_decay_N2OR_2)$coefficients[1,2]
+
+exp_decay_coeff$k[which(exp_decay_coeff$Replicate == "N2OR_2")] = summary(exp_decay_N2OR_2)$coefficients[2,1]
+
+exp_decay_coeff$se_k[which(exp_decay_coeff$Replicate == "N2OR_2")] = summary(exp_decay_N2OR_2)$coefficients[2,2]
+
+##N2OR_3:
+exp_decay_coeff$A_0[which(exp_decay_coeff$Replicate == "N2OR_3")] = summary(exp_decay_N2OR_3)$coefficients[1,1]
+
+exp_decay_coeff$se_A_0[which(exp_decay_coeff$Replicate == "N2OR_3")] = summary(exp_decay_N2OR_3)$coefficients[1,2]
+
+exp_decay_coeff$k[which(exp_decay_coeff$Replicate == "N2OR_3")] = summary(exp_decay_N2OR_3)$coefficients[2,1]
+
+exp_decay_coeff$se_k[which(exp_decay_coeff$Replicate == "N2OR_3")] = summary(exp_decay_N2OR_3)$coefficients[2,2]
+
+(exp_decay_coeff)
+
+write.csv(exp_decay_coeff, here("data/output/exp_decay_coeff.csv"), row.names = TRUE)
+
+mean(exp_decay_coeff$k)
+sd(exp_decay_coeff$k)
+```
+
+#Summary table with calculated N_s0 and exponential decay coefficients (mean +/- standard error)
+```{r exp_decay_coeff_summary}
+(exp_decay_coeff_summary <- exp_decay_coeff %>% mutate(
+  N_s0 = paste(round(as.numeric(exp_decay_coeff$N_s0), 2), "\u00B1", round(as.numeric(exp_decay_coeff$se_N_s0), 2)),
+  
+  A_0 = paste(round(as.numeric(exp_decay_coeff$A_0), 2), "\u00B1", round(as.numeric(exp_decay_coeff$se_A_0), 2)),
+  
+  k = paste(round(as.numeric(exp_decay_coeff$k), 3), "\u00B1", round(as.numeric(exp_decay_coeff$se_k), 3)),  
+  
+  ) %>%
+   
+   dplyr::select(-se_N_s0, -se_A_0, -se_k)
+)
+
+write.csv(exp_decay_coeff_summary, here("data/output/exp_decay_coeff_summary.csv"), row.names = TRUE)
+```
+
+
+#ECD and IRMS: Plot N2O vs time for N2OR rxns 1-3 and fit exponential decay curves (analyze each replicate individually).
+```{r plot_N2O_ECD_IRMS}
+#Select rxns with N2OR
+ECD_N2OR_rxns <- ECD_samples %>% filter(Replicate == "N2OR_1" | Replicate == "N2OR_2" | Replicate == "N2OR_3")
+
+#Plot
+(plot_N2OR_ECD_IRMS <- ggplot()+
+  #Plot actual ECD values
+  geom_point(data = ECD_N2OR_rxns, mapping = 
+         aes(x = Time_min, y = Total_N2O_umole), shape = 1, size = 2)+
+  #Plot exponential decay model fit as red line
+    geom_line(data = ECD_samples_pred, mapping = 
+         aes(x = Time_min, y = Total_N2O_umole_pred), color = "red")+
+  #Plot IRMS data (calculated using exponential decay model)
+    geom_point(data = IRMS_N2OR_rxns, mapping = 
+         aes(x = Time_min, y = Total_N2O_umole), shape = 16, size = 2)+
+    
+  facet_wrap(~`Replicate`, nrow = 1)+
+    
+   geom_vline(data = ECD_N2OR_rxns, mapping = aes(xintercept = 0))+
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 16))+
+  theme(axis.text = element_text(size = 16))+
+  xlab(expression(paste(bold("Time (min)"))))+
+  ylab(expression(paste(bold(N[2]), bold("O"),bold (" ("), bold( mu),bold("mol) "), sep="")))+
+  
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))+
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+  theme(axis.title.y=element_text(margin=margin(0,20,0,0),size=12,face="bold",angle=90,hjust=0.5,vjust=1.1))+
+  theme(axis.title.x=element_text(margin=margin(10,20,0,0),size=12,face="bold"))
+)    
+
+ggsave(plot_N2OR_ECD_IRMS, filename = here("graphs/plot_N2OR_ECD_IRMS.tiff"), height = 4, width = 6, units = "in")
+```
+
+#Figure 3a: Plot delta_N, delta_alpha, delta_beta, and SP against (1-f). (N2OR1-3 combined)
+```{r plot_delta_N_vs_one_minus_f}
+#Make tidy table
+IRMS_N2OR_tidy <- IRMS_N2OR_rxns %>% 
+  pivot_longer(c(delta_N, delta_alpha, delta_beta, SP), names_to = "delta_15N", values_to = "delta_15N_values")
+
+IRMS_N2OR_tidy$delta_15N <- factor(IRMS_N2OR_tidy$delta_15N, levels = c("delta_N", "delta_alpha", "delta_beta", "SP"))
+
+(plot_delta_N_vs_one_minus_f_v2 <- 
+  ggplot()+
+   geom_point(data = IRMS_N2OR_tidy, mapping = 
+         aes(x = one_minus_f, y = delta_15N_values, shape = delta_15N, color = delta_15N), size = 2)+
+   
+   geom_vline(data = IRMS_N2OR_tidy, mapping = aes(xintercept = 0))+
+   
+    scale_color_manual(name = "delta values",
+    values = c("#999999", "#a6cee3","#1E5C19", "#CC79A7"),
+    labels = c(
+    expression(paste(bold(delta^15),bold(N^bulk), sep="")),    
+    expression(paste(bold(delta^15),bold(N^alpha), sep="")),
+    expression(paste(bold(delta^15),bold(N^beta), sep="")),
+    expression(paste(bold(delta^15),bold(N^SP) ,sep=""))    
+  ))+
+ 
+  scale_shape_manual(name = "delta values",
+    values = c(16, 15, 17, 8),
+    labels = c(
+    expression(paste(bold(delta^15),bold(N^bulk), sep="")),    
+    expression(paste(bold(delta^15),bold(N^alpha), sep="")),
+    expression(paste(bold(delta^15),bold(N^beta), sep="")),
+    expression(paste(bold(delta^15),bold(N^SP), sep=""))    
+  ))+  
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #Add ranges for x axis
+  scale_x_continuous(limits = c(0, 1), breaks = c(0.25*0:5),
+                     labels = paste0(c(0.25*0:5),""))+
+  #ylim(-5, 25)+  
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 18))+
+  theme(axis.text = element_text(size = 18))+
+  xlab(expression(paste(bold("Fraction Reduced (1-"), italic("f"), bold(")"))))+
+  ylab(expression(paste(bold(delta^15),bold(N),bold(" (\u2030)"),sep="")))+  
+  
+  #format axis lines, text, tick marks
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))+
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+  
+  #format legend
+  theme(legend.title = element_blank())+
+  theme(legend.text = element_text(size = 16))
+  #theme(legend.position = c(0.84,0.3))
+  #theme(legend.position = "none")
+
+)
+
+
+ggsave(plot_delta_N_vs_one_minus_f_v2, filename = here("graphs/plot_delta_N_vs_one_minus_f_v2.tiff"), height = 3.5, width = 6, units = "in")
+```
+
+#Figure 3b: Plot delta_18O against (1-f) with legend. (N2OR1-3 combined)
+```{r plot_delta_18O_vs_one_minus_f_legend}
+#Make tidy table
+IRMS_N2OR_tidy_v2 <- IRMS_N2OR_rxns %>% 
+  pivot_longer(c(delta_18O), names_to = "delta_O", values_to = "delta_O_values")
+
+IRMS_N2OR_tidy_v2$delta_15N <- factor(IRMS_N2OR_tidy_v2$delta_O, levels = c("delta_18O"))
+
+(plot_delta_18O_vs_one_minus_f_v2 <- 
+  ggplot()+
+   geom_point(data = IRMS_N2OR_tidy_v2, mapping = 
+         aes(x = one_minus_f, y = delta_O_values, shape = delta_O, color = delta_O), size = 2)+
+   
+   geom_vline(data = IRMS_N2OR_tidy_v2, mapping = aes(xintercept = 0))+
+   
+    scale_color_manual(name = "delta values",
+    values = c("#D55E00"),
+    labels = c(
+    expression(paste(bold(delta^18),bold(O), sep=""))    
+  ))+
+ 
+  scale_shape_manual(name = "delta values",
+    values = c(15),
+    labels = c(
+    expression(paste(bold(delta^18),bold(O), sep=""))    
+  ))+  
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #Add ranges for x axis
+  scale_x_continuous(limits = c(0, 1), breaks = c(0.25*0:5),
+                     labels = paste0(c(0.25*0:5),""))+
+  #ylim(-5, 25)+  
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 18))+
+  theme(axis.text = element_text(size = 18))+
+  xlab(expression(paste(bold("Fraction Reduced (1-"), italic("f"), bold(")"))))+
+  ylab(expression(paste(bold(delta^18),bold(O),bold(" (\u2030)"),sep="")))+  
+  
+  #format axis lines, text, tick marks
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))+
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+  
+  #format legend
+  theme(legend.title = element_blank())+
+  theme(legend.text = element_text(size = 16))
+  #theme(legend.position = c(0.84,0.3))
+  #theme(legend.position = "none")
+
+)
+
+
+ggsave(plot_delta_18O_vs_one_minus_f_v2, filename = here("graphs/plot_delta_18O_vs_one_minus_f_v2.tiff"), height = 3.5, width = 6, units = "in")
+```
+
+#Make blank table (tibble) for storing values extracted from each model.
+```{r summary_blank}
+#n = number of loops; in this case, the number of replicates
+n = 1
+
+#m = number of models; in this case, m = 1 because we're only using one model for each table
+
+m <- 1
+
+blank_tb <- function(n, m = 1) {
+  tibble(
+    Model = vector(length = n*m, mode = "expression"),
+    Data = vector(length = n*m, mode = "expression"),
+    Replicate = vector(length = n*m, mode = "expression"),
+    Delta_type = vector(length = n*m, mode = "expression"),
+  
+    Multiple_R_squared = vector(length = n*m, mode = "numeric"),
+    RMSE_lm = vector(length = n*m, mode = "numeric"), #RMSE value for delta_p prediction from linear Rayleigh model
+  
+    f_min = vector(length = n*m, mode = "numeric"),
+    f_max = vector(length = n*m, mode = "numeric"),
+  
+    delta_s0_meas = vector(length = n*m, mode = "numeric"),
+    se_delta_s0_meas = vector(length = n*m, mode = "numeric"),
+    
+    delta_s0_calc = vector(length = n*m, mode = "numeric"),
+    se_delta_s0_calc = vector(length = n*m, mode = "numeric"),
+    
+    epsilon = vector(length = n*m, mode = "numeric"),
+    se_epsilon = vector(length = n*m, mode = "numeric"),
+    
+    ff = vector(length = n*m, mode = "numeric"),
+    se_ff = vector(length = n*m, mode = "numeric"),
+    
+    KIE = vector(length = n*m, mode = "numeric"),
+    se_KIE = vector(length = n*m, mode = "numeric"),
+    
+    pval_epsilon = vector(length = n*m, mode = "numeric")
+)
+}
+```
+
+
+#Make table with values extracted from the Rayleigh model (x=lnf, y = delta) for delta_N, delta_alpha, delta_beta, SP, and delta_18O (N2OR1-3 combined; all data)
+
+  - Make a separate row in the table for each delta type (delta_N, delta_alpha, delta_beta, SP, and delta_18O)
+```{r N2OR_ray_table, warning=FALSE}
+#n = number of loops; in this case, the number of rows in the table
+n <- 5
+
+#m = number of models; in this case, m = 1 because we're only using one model (standard Rayleigh)
+
+m <- 1
+
+#Make empty table to store results
+N2OR_ray <- blank_tb(n, m)
+
+N2OR_ray <- mutate(N2OR_ray,
+  Model = c(
+    "Rayleigh (x = ln(f))"
+  ),
+  
+  Data = c(
+    "N2OR Replicates 1-3"
+),
+
+  Replicate = "pooled N2OR_1-3",
+
+  Delta_type = c(
+    "delta_N",
+    "delta_alpha",
+    "delta_beta",
+    "SP",
+    "delta_18O"
+  )
+) 
+
+for (i in 1:n) {
+    data <- IRMS_N2OR_rxns
+    
+  
+  if(i == 1){ #First row: delta_N
+    y <- IRMS_N2OR_rxns$delta_N
+    x <- IRMS_N2OR_rxns$lnf
+  } else if(i == 2){ #Second row: delta_alpha
+    y <- IRMS_N2OR_rxns$delta_alpha
+    x <- IRMS_N2OR_rxns$lnf
+  } else if(i == 3){ #Third row: delta_beta
+    y <- IRMS_N2OR_rxns$delta_beta
+    x <- IRMS_N2OR_rxns$lnf    
+  } else if(i == 4){ #Fourth row: SP
+    y <- IRMS_N2OR_rxns$SP
+    x <- IRMS_N2OR_rxns$lnf        
+  } else if (i == 5){ #Fifth row: delta_18O
+    y <- IRMS_N2OR_rxns$delta_18O
+    x <- IRMS_N2OR_rxns$lnf    
+  }
+  
+
+  
+  #Apply standard Rayleigh model where x = lnf and y = delta_N, delta_alpha, or delta_beta, SP, or delta_18O
+    lm_delta <- lm(y ~ x, data = data)
+    
+    #Fill in table w/ values extracted from standard Rayleigh model
+    N2OR_ray$Multiple_R_squared[i] = summary(lm_delta)$r.squared
+    N2OR_ray$RMSE_lm[i] = rmse(model = lm_delta, data = data)
+  
+    N2OR_ray$f_min[i] = min(data$f)
+    N2OR_ray$f_max[i] = max(data$f)
+    
+    N2OR_ray$delta_s0_meas[i] = initial_deltas$delta_s0_meas[i]
+    N2OR_ray$se_delta_s0_meas[i] = initial_deltas$se_delta_s0_meas[i]
+  
+    N2OR_ray$delta_s0_calc[i] = summary(lm_delta)$coefficients[1,1]
+    N2OR_ray$se_delta_s0_calc[i] = summary(lm_delta)$coefficients[1,2]
+    
+    N2OR_ray$epsilon[i] = as.numeric( lm_delta$coefficients[2])
+    N2OR_ray$se_epsilon[i] = summary( lm_delta)$coefficients[2,2]
+    
+    N2OR_ray$ff[i] = 1 +  lm_delta$coefficients[2]/1000
+    N2OR_ray$se_ff[i] = N2OR_ray$se_epsilon[i]/1000    
+    
+    N2OR_ray$KIE[i] = 1/N2OR_ray$ff[i]
+    N2OR_ray$se_KIE[i] = abs(-1/(N2OR_ray$ff[i])^2*N2OR_ray$se_ff[i])
+    
+    N2OR_ray$pval_epsilon[i] = summary(lm_delta)$coefficients[2,4]
+}
+
+write.csv(N2OR_ray, here("data/output/N2OR_ray.csv"), row.names = TRUE)
+
+(N2OR_ray)
+```
+
+#N2OR_ray_summary: Paste mean +/- standard error; N2OR1-3 combined, all data
+
+When the .csv file is opened in Excel, a funky symbol is included with the +/- symbol, but that can be removed with find and replace.
+```{r N2OR_ray_summary}
+
+(N2OR_ray_summary <- N2OR_ray %>% mutate(
+  Multiple_R_squared =
+    paste(round(as.numeric(N2OR_ray$Multiple_R_squared), 2)),
+  
+  RMSE_lm =
+    paste(round(as.numeric(N2OR_ray$RMSE_lm), 2) 
+  ),
+  
+  f_min = 
+    paste(round(as.numeric(N2OR_ray$f_min), 2)
+  ),
+  
+  f_max = 
+    paste(round(as.numeric(N2OR_ray$f_max), 2)
+  ),
+
+  delta_s0_meas = c(
+    paste(round(as.numeric(N2OR_ray$delta_s0_meas), 1), "\u00B1", round(as.numeric(N2OR_ray$se_delta_s0_meas), 1))
+  ),
+  
+  delta_s0_calc = c(
+    paste(round(as.numeric(N2OR_ray$delta_s0_calc), 1), "\u00B1", round(as.numeric(N2OR_ray$se_delta_s0_calc), 1))
+  ),
+   
+  epsilon = c(
+    paste(round(as.numeric(N2OR_ray$epsilon), 1), "\u00B1", round(as.numeric(N2OR_ray$se_epsilon), 1))
+  ),  
+
+  ff = c(
+    paste(round(as.numeric(N2OR_ray$ff), 4), "\u00B1", round(as.numeric(N2OR_ray$se_ff), 4))
+  ),
+  
+ KIE = c(
+    paste(round(as.numeric(N2OR_ray$KIE), 4), "\u00B1", round(as.numeric(N2OR_ray$se_KIE), 4))
+  ),
+  
+  pval_epsilon = c(
+    as.numeric(formatC(N2OR_ray$pval_epsilon,  format = "e", digits = 2))
+  )
+
+)%>%
+    dplyr::select(-se_delta_s0_meas, -se_delta_s0_calc, -se_epsilon, -se_ff, -se_KIE)
+)
+
+write.csv(N2OR_ray_summary, here("data/output/N2OR_ray_summary.csv"), row.names = TRUE)
+```
+
+#Early data: Make table with values extracted from the Rayleigh model (x=lnf, y = delta) for delta_N, delta_alpha, delta_beta, SP, and delta_18O (N2OR1-3 combined; f >= 0.4)
+
+  - Make a separate row in the table for each delta type (delta_N, delta_alpha, delta_beta, SP, and delta_18O)
+```{r N2OR_ray_early_table, warning=FALSE}
+#n = number of loops; in this case, the number of rows in the table
+n <- 5
+
+#m = number of models; in this case, m = 1 because we're only using one model (standard Rayleigh)
+
+m <- 1
+
+#Make empty table to store results
+N2OR_ray_early <- blank_tb(n, m)
+
+N2OR_ray_early <- mutate(N2OR_ray_early,
+  Model = c(
+    "Rayleigh (x = ln(f))"
+  ),
+  
+  Data = c(
+    "N2OR Replicates 1-3; f >= 0.4"
+),
+
+  Replicate = "pooled N2OR_1-3",
+
+  Delta_type = c(
+    "delta_N",
+    "delta_alpha",
+    "delta_beta",
+    "SP",
+    "delta_18O"
+  )
+) 
+
+for (i in 1:n) {
+    data <- filter(IRMS_N2OR_rxns, f >= 0.4)
+    
+  
+  if(i == 1){ #First row: delta_N
+    y <- data$delta_N
+    x <- data$lnf
+  } else if(i == 2){ #Second row: delta_alpha
+    y <- data$delta_alpha
+    x <- data$lnf
+  } else if(i == 3){ #Third row: delta_beta
+    y <- data$delta_beta
+    x <- data$lnf    
+  } else if(i == 4){ #Fourth row: SP
+    y <- data$SP
+    x <- data$lnf        
+  } else if (i == 5){ #Fifth row: delta_18O
+    y <- data$delta_18O
+    x <- data$lnf    
+  }
+  
+
+  
+  #Apply standard Rayleigh model where x = lnf and y = delta_N, delta_alpha, delta_beta, SP, or delta_18O
+    lm_delta <- lm(y ~ x, data = data)
+    
+    #Fill in table w/ values extracted from standard Rayleigh model
+    N2OR_ray_early$Multiple_R_squared[i] = summary(lm_delta)$r.squared
+    N2OR_ray_early$RMSE_lm[i] = rmse(model = lm_delta, data = data)
+  
+    N2OR_ray_early$f_min[i] = min(data$f)
+    N2OR_ray_early$f_max[i] = max(data$f)
+    
+    N2OR_ray_early$delta_s0_meas[i] = initial_deltas$delta_s0_meas[i]
+    N2OR_ray_early$se_delta_s0_meas[i] = initial_deltas$se_delta_s0_meas[i]
+  
+    N2OR_ray_early$delta_s0_calc[i] = summary(lm_delta)$coefficients[1,1]
+    N2OR_ray_early$se_delta_s0_calc[i] = summary(lm_delta)$coefficients[1,2]
+    
+    N2OR_ray_early$epsilon[i] = as.numeric( lm_delta$coefficients[2])
+    N2OR_ray_early$se_epsilon[i] = summary( lm_delta)$coefficients[2,2]
+    
+    N2OR_ray_early$ff[i] = 1 +  lm_delta$coefficients[2]/1000
+    N2OR_ray_early$se_ff[i] = N2OR_ray_early$se_epsilon[i]/1000    
+    
+    N2OR_ray_early$KIE[i] = 1/N2OR_ray_early$ff[i]
+    N2OR_ray_early$se_KIE[i] = abs(-1/(N2OR_ray_early$ff[i])^2*N2OR_ray_early$se_ff[i])
+    
+    N2OR_ray_early$pval_epsilon[i] = summary(lm_delta)$coefficients[2,4]
+}
+
+write.csv(N2OR_ray_early, here("data/output/N2OR_ray_early.csv"), row.names = TRUE)
+
+(N2OR_ray_early)
+```
+
+#N2OR_ray_early_summary: Paste mean +/- standard error; N2OR1-3 combined, f >= 0.4
+
+When the .csv file is opened in Excel, a funky symbol is included with the +/- symbol, but that can be removed with find and replace.
+```{r N2OR_ray_early_summary}
+
+(N2OR_ray_early_summary <- N2OR_ray_early %>% mutate(
+  Multiple_R_squared =
+    paste(round(as.numeric(N2OR_ray_early$Multiple_R_squared), 2)),
+  
+  RMSE_lm =
+    paste(round(as.numeric(N2OR_ray_early$RMSE_lm), 2) 
+  ),
+  
+  f_min = 
+    paste(round(as.numeric(N2OR_ray_early$f_min), 2)
+  ),
+  
+  f_max = 
+    paste(round(as.numeric(N2OR_ray_early$f_max), 2)
+  ),
+
+  delta_s0_meas = c(
+    paste(round(as.numeric(N2OR_ray_early$delta_s0_meas), 1), "\u00B1", round(as.numeric(N2OR_ray_early$se_delta_s0_meas), 1))
+  ),
+  
+  delta_s0_calc = c(
+    paste(round(as.numeric(N2OR_ray_early$delta_s0_calc), 1), "\u00B1", round(as.numeric(N2OR_ray_early$se_delta_s0_calc), 1))
+  ),
+   
+  epsilon = c(
+    paste(round(as.numeric(N2OR_ray_early$epsilon), 1), "\u00B1", round(as.numeric(N2OR_ray_early$se_epsilon), 1))
+  ),  
+
+  ff = c(
+    paste(round(as.numeric(N2OR_ray_early$ff), 4), "\u00B1", round(as.numeric(N2OR_ray_early$se_ff), 4))
+  ),
+  
+ KIE = c(
+    paste(round(as.numeric(N2OR_ray_early$KIE), 4), "\u00B1", round(as.numeric(N2OR_ray_early$se_KIE), 4))
+  ),
+  
+  pval_epsilon = c(
+    as.numeric(formatC(N2OR_ray_early$pval_epsilon,  format = "e", digits = 2))
+  )
+
+)%>%
+    dplyr::select(-se_delta_s0_meas, -se_delta_s0_calc, -se_epsilon, -se_ff, -se_KIE)
+)
+
+write.csv(N2OR_ray_early_summary, here("data/output/N2OR_ray_early_summary.csv"), row.names = TRUE)
+```
+
+#Bulk N: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
+
+Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
+ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
+
+  - slope = epsilon
+
+  - intercept = 0
+```{r N2OR_lm_BW_N}
+N2OR_lm_BW_N <- lm(
+  log(R_N/R_N_0) ~ log(f*(1+R_N_0)/(1+R_N)), data = IRMS_N2OR_rxns
+)
+
+summary(N2OR_lm_BW_N)
+
+#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
+##intercept
+summary(N2OR_lm_BW_N)$coefficients[1,1]*1000
+
+##slope (epsilon)
+summary(N2OR_lm_BW_N)$coefficients[2,1]*1000
+```
+The epsilon value for bulk N calculated using the Bigeleisen-Wolfsburg version of the Rayleigh equation (N2OR_lm_BW_N) is very similar to the epsilon value calculated using Mariotti's approximation of the Rayleigh equation (N2OR_lm_delta_N).
+
+#N_alpha: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
+
+Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
+ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
+```{r N2OR_lm_BW_alpha}
+N2OR_lm_BW_alpha <- lm(
+  log(R_alpha/R_alpha_0) ~ log(f*(1+R_alpha_0)/(1+R_alpha)), data = IRMS_N2OR_rxns
+)
+
+summary(N2OR_lm_BW_alpha)
+
+#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
+##intercept
+summary(N2OR_lm_BW_alpha)$coefficients[1,1]*1000
+
+##slope (epsilon)
+summary(N2OR_lm_BW_alpha)$coefficients[2,1]*1000
+```
+#N_beta: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
+
+Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
+ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
+```{r N2OR_lm_BW_beta}
+N2OR_lm_BW_beta <- lm(
+  log(R_beta/R_beta_0) ~ log(f*(1+R_beta_0)/(1+R_beta)), data = IRMS_N2OR_rxns
+)
+
+summary(N2OR_lm_BW_beta)
+
+#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
+##intercept
+summary(N2OR_lm_BW_beta)$coefficients[1,1]*1000
+
+##slope (epsilon)
+summary(N2OR_lm_BW_beta)$coefficients[2,1]*1000
+```
+#delta_18O: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
+
+Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
+ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
+```{r N2OR_lm_BW_18O}
+N2OR_lm_BW_18O <- lm(
+  log(R_18O/R_18O_0) ~ log(f*(1+R_18O_0)/(1+R_18O)), data = IRMS_N2OR_rxns
+)
+
+summary(N2OR_lm_BW_18O)
+
+#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
+##intercept
+summary(N2OR_lm_BW_18O)$coefficients[1,1]*1000
+
+##slope (epsilon)
+summary(N2OR_lm_BW_18O)$coefficients[2,1]*1000
+```
+- The epsilon value for delta_18O changes the most when the Rayleigh model without approximation (BW) is used instead of Mariotti's approximation of the Rayleigh equation (where y = delta and x = lnf).
+  - w/o approx: epsilon_18O  = -13.5 per mil
+  - w/ approx: epsilon_18O = -14.2 per mil
+
+This is not surprising, as epsilon and especially delta_s0 are the largest for 18O (compared to 15N). Mariotti's approximation of the Rayleigh equation assumes that delta_s0 and epsilon are both small compared to 1 (i.e, relatively close to 0 per mil).
+
+#IRMS_N2OR_BW: Make table with BW model values for x and y
+
+This will make the code for graphing easier to read.
+```{r IRMS_N2OR_BW}
+#Make table with BW model values for x and y
+IRMS_N2OR_BW <- IRMS_N2OR_rxns %>% mutate(
+  #Add x and y values for BW model
+  ##N_bulk
+  y_N = log(R_N/R_N_0),
+  x_N = log(f*(1+R_N_0)/(1+R_N)),
+  
+  ##N_alpha
+  y_alpha = log(R_alpha/R_alpha_0),
+  x_alpha = log(f*(1+R_alpha_0)/(1+R_alpha)),
+  
+  ##N_beta
+  y_beta = log(R_beta/R_beta_0),
+  x_beta = log(f*(1+R_beta_0)/(1+R_beta)),
+  
+  ##SP
+  y_SP = log(R_SP/R_SP_0),
+  x_SP = log(f*(1+R_SP_0)/(1+R_SP)),
+  
+  ##delta_18O
+  y_18O = log(R_18O/R_18O_0),
+  x_18O = log(f*(1+R_18O_0)/(1+R_18O))
+)
+```
+
+#Figure 3c: N_bulk, N_alpha, N_beta, and SP: Rayleigh plot w/o approx (BW model): Plot y_N = log(R_N/R_N_0) vs x_N = log(f*(1+R_N_0)/(1+R_N)); with legend
+```{r plot_N_SP_BW_legend}
+#Make tidy table
+##n = number of delta types/R types (4 in this case: bulk, alpha, beta, and SP)
+n <- 4
+
+IRMS_N2OR_BW_tidy <- tibble(
+  Sample_name = rep(IRMS_N2OR_BW$Sample_name, n),
+  Replicate = rep(IRMS_N2OR_BW$Replicate, n),
+  Delta_type = c(
+    rep("bulk", times = length(IRMS_N2OR_BW$Sample_name)),
+    rep("alpha", times = length(IRMS_N2OR_BW$Sample_name)),
+    rep("beta", times = length(IRMS_N2OR_BW$Sample_name)),
+    rep("SP", times = length(IRMS_N2OR_BW$Sample_name))    
+  ),
+  x = c(
+    IRMS_N2OR_BW$x_N,
+    IRMS_N2OR_BW$x_alpha,
+    IRMS_N2OR_BW$x_beta,
+    IRMS_N2OR_BW$x_SP    
+  ),
+  
+  y = c(
+    IRMS_N2OR_BW$y_N,
+    IRMS_N2OR_BW$y_alpha,
+    IRMS_N2OR_BW$y_beta,
+    IRMS_N2OR_BW$y_SP
+  )
+)
+
+#Factor Delta_type so that data doesn't get sorted alphabetically in legend
+IRMS_N2OR_BW_tidy$Delta_type <- factor(IRMS_N2OR_BW_tidy$Delta_type, levels = c("bulk", "alpha", "beta", "SP"))
+
+(plot_N_SP_BW_legend <- 
+  ggplot(data = IRMS_N2OR_BW_tidy)+
+   geom_point(mapping = 
+         aes(x = x, y = y, shape = Delta_type, color = Delta_type), size = 2)+   
+    geom_smooth(mapping = aes(x = x, y = y, color = Delta_type), method = lm, se = FALSE)+
+   
+   #geom_vline(data = IRMS_N2OR_tidy, mapping = aes(xintercept = 0))+
+   
+    scale_color_manual(name = "R type",
+    values = c("#999999", "#a6cee3","#1E5C19", "#CC79A7"),
+    labels = c(
+    expression(paste(bold(R^15),bold(N^bulk), sep="")),    
+    expression(paste(bold(R^15),bold(N^alpha), sep="")),
+    expression(paste(bold(R^15),bold(N^beta), sep="")),
+    expression(paste(bold(R^15),bold(N^SP), sep=""))    
+  ))+
+ 
+  scale_shape_manual(name = "R type",
+    values = c(16, 15, 17, 8),
+    labels = c(
+    expression(paste(bold(R^15),bold(N^bulk), sep="")),    
+    expression(paste(bold(R^15),bold(N^alpha), sep="")),
+    expression(paste(bold(R^15),bold(N^beta), sep="")),
+    expression(paste(bold(R^15),bold(N^SP), sep=""))     
+  ))+  
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #Add range for x-axis
+  scale_x_continuous(limits = c(-2.1, 0.0001), breaks = c(-0.5*0:4),
+                     labels = paste0(c(-0.5*0:4),""))+     
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 18))+
+  theme(axis.text = element_text(size = 18))+
+  xlab(expression(paste(bold("ln["), italic("f"), bold("*"), bold("(1 + "), bold(R[s0]), bold(")/(1 + "), bold(R[s]), bold(")"), bold("]"))))+
+  ylab(expression(paste(bold("ln("), bold(R[s]), bold("/"),bold(R[s0]), bold(")"), sep="")))+
+   
+  #Add plot title
+   theme(plot.title = element_text(size = 18, hjust = 0.5))+
+   #ggtitle(expression(paste(bold(N^alpha), bold(" and "), bold(N^beta))))+
+  
+  #format axis lines, text, tick marks
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))+
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+  
+  #format legend
+  theme(legend.title = element_blank())+
+  theme(legend.text = element_text(size = 16))
+  #theme(legend.position = c(0.84,0.3))
+  #theme(legend.position = "none")
+
+)
+
+
+ggsave(plot_N_SP_BW_legend, filename = here("graphs/plot_N_SP_BW_legend.tiff"), height = 3.5, width = 6, units = "in")
+```
+
+#Figure 3d: 18O: Rayleigh plot w/o approx (BW model): Plot y_18O = log(R_N/R_N_0) vs x_18O = log(f*(1+R_N_0)/(1+R_N)); with legend
+```{r plot_18O_BW_legend}
+#Make tidy table
+##n = number of delta types/R types (1 in this case: 18O)
+n <- 1
+
+IRMS_N2OR_BW_tidy_v2 <- tibble(
+  Sample_name = rep(IRMS_N2OR_BW$Sample_name, n),
+  Replicate = rep(IRMS_N2OR_BW$Replicate, n),
+  Delta_type = c(
+    rep("18O", times = length(IRMS_N2OR_BW$Sample_name))
+  ),
+  x = c(
+    IRMS_N2OR_BW$x_18O
+  ),
+  
+  y = c(
+    IRMS_N2OR_BW$y_18O
+  )
+)
+
+#Factor Delta_type so that data doesn't get sorted alphabetically in legend
+IRMS_N2OR_BW_tidy_v2$Delta_type <- factor(IRMS_N2OR_BW_tidy_v2$Delta_type, levels = c("18O"))
+
+(plot_18O_BW_legend <- 
+  ggplot(data = IRMS_N2OR_BW_tidy_v2)+
+   geom_point(mapping = 
+         aes(x = x, y = y, shape = Delta_type, color = Delta_type), size = 2)+   
+    geom_smooth(mapping = aes(x = x, y = y, color = Delta_type), method = lm, se = FALSE)+
+   
+   #geom_vline(data = IRMS_N2OR_tidy, mapping = aes(xintercept = 0))+
+   
+    scale_color_manual(name = "R type",
+    values = c("#D55E00"),
+    labels = c(
+    expression(paste(bold(R^18),bold(O), sep=""))    
+  ))+
+ 
+  scale_shape_manual(name = "R type",
+    values = c(15),
+    labels = c(
+    expression(paste(bold(R^18),bold(O), sep=""))    
+  ))+  
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #Add range for x-axis
+  scale_x_continuous(limits = c(-2.1, 0.0001), breaks = c(-0.5*0:4),
+                     labels = paste0(c(-0.5*0:4),""))+     
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 18))+
+  theme(axis.text = element_text(size = 18))+
+  xlab(expression(paste(bold("ln["), italic("f"), bold("*"), bold("(1 + "), bold(R[s0]), bold(")/(1 + "), bold(R[s]), bold(")"), bold("]"))))+
+  ylab(expression(paste(bold("ln("), bold(R[s]), bold("/"),bold(R[s0]), bold(")"), sep="")))+
+   
+  #Add plot title
+   theme(plot.title = element_text(size = 18, hjust = 0.5))+
+   #ggtitle(expression(paste(bold(N^alpha), bold(" and "), bold(N^beta))))+
+  
+  #format axis lines, text, tick marks
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))+
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+  
+  #format legend
+  theme(legend.title = element_blank())+
+  theme(legend.text = element_text(size = 16))
+  #theme(legend.position = c(0.84,0.3))
+  #theme(legend.position = "none")
+
+)
+
+
+ggsave(plot_18O_BW_legend, filename = here("graphs/plot_18O_BW_legend.tiff"), height = 3.5, width = 6, units = "in")
+```
+
+#Make table with values extracted from the Rayleigh model without approximation where x = ln(f*(1+R_s0)/(1+R_s)) and y = ln(R_s/R_s0) for delta_N, delta_alpha, delta_beta, SP, and delta_18O (N2OR1-3 combined)
+
+  - Make a separate row in the table for each delta type (delta_N, delta_alpha, delta_beta, SP, and delta_18O)
+  
+  - The linear regression model for the Rayleigh equation for substrate without approximation is defined so that x = ln(f*(1+R_s0)/(1+R_s)) and y = ln(R_s/R_s0)
+
+  - This is Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
+ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
+
+  - slope = epsilon
+
+  - intercept = 0
+  
+##References
+  - Hayes, J.: An Introduction to Isotopic Calculations, Woods Hole Oceanographic Insitution, https://doi.org/10.1575/1912/27058, 2004.
+  - Bigeleisen, J. and Wolfsberg, M.: Theoretical and experimental aspects of isotope effects in chemical kinetics, Adv Chem Phys, 1, 15-76, 1958.
+```{r N2OR_ray_no_approx, warning=FALSE}
+#n = number of loops; in this case, the number of rows in the table
+n <- 5
+
+#m = number of models; in this case, m = 1 because we're only using one model (standard Rayleigh)
+
+m <- 1
+
+#Make empty table to store results
+N2OR_ray_no_approx <- blank_tb(n, m)
+
+N2OR_ray_no_approx <- mutate(N2OR_ray_no_approx,
+  Model = c(
+    "BW [Rayleigh w/o approx: x = ln(R_s/R_s0) and y = ln(f*(1+R_s0)/(1+R_s)]"
+  ),
+  
+  Data = c(
+    "N2OR Replicates 1-3"
+),
+
+  Replicate = "pooled N2OR_1-3",
+
+  Delta_type = c(
+    "delta_N",
+    "delta_alpha",
+    "delta_beta",
+    "SP",
+    "delta_18O"
+  )
+) 
+
+for (i in 1:n) {
+    data <- IRMS_N2OR_BW
+    
+  
+  if(i == 1){ #First row: delta_N
+    y <- IRMS_N2OR_BW$y_N
+    x <- IRMS_N2OR_BW$x_N
+  } else if(i == 2){ #Second row: delta_alpha
+    y <- IRMS_N2OR_BW$y_alpha
+    x <- IRMS_N2OR_BW$x_alpha
+  } else if(i == 3){ #Third row: delta_beta
+    y <- IRMS_N2OR_BW$y_beta
+    x <- IRMS_N2OR_BW$x_beta
+  } else if(i == 4){ #Fourth row: SP
+    y <- IRMS_N2OR_BW$y_SP
+    x <- IRMS_N2OR_BW$x_SP        
+  } else if (i == 5){ #Fifth row: delta_18O
+    y <- IRMS_N2OR_BW$y_18O
+    x <- IRMS_N2OR_BW$x_18O    
+  }
+  
+
+  
+  #Apply standard Rayleigh model where x = `-flnf/(1-f)` and y = delta_p, delta_alpha, or delta_beta
+    lm_delta <- lm(y ~ x, data = data)
+    
+    #Fill in table w/ values extracted from standard Rayleigh model
+    N2OR_ray_no_approx$Multiple_R_squared[i] = summary(lm_delta)$r.squared
+    N2OR_ray_no_approx$RMSE_lm[i] = rmse(model = lm_delta, data = data)
+  
+    N2OR_ray_no_approx$f_min[i] = min(data$f)
+    N2OR_ray_no_approx$f_max[i] = max(data$f)
+    
+    N2OR_ray_no_approx$delta_s0_meas[i] = initial_deltas$delta_s0_meas[i]
+    N2OR_ray_no_approx$se_delta_s0_meas[i] = initial_deltas$se_delta_s0_meas[i]
+  
+    N2OR_ray_no_approx$delta_s0_calc[i] = "NA"
+    N2OR_ray_no_approx$se_delta_s0_calc[i] = "NA"
+    
+    #To convert dimensionless epsilon to per mil epsilon, multiply by 1000
+    N2OR_ray_no_approx$epsilon[i] = as.numeric( lm_delta$coefficients[2])*1000
+    
+    #To convert dimensionless se_epsilon to per mil se_epsilon, multiply by 1000
+    N2OR_ray_no_approx$se_epsilon[i] = summary( lm_delta)$coefficients[2,2]*1000
+    
+    #ff = 1 + (dimensionless epsilon)
+    N2OR_ray_no_approx$ff[i] = 1 +  lm_delta$coefficients[2]
+    #se_ff = se_epsilon for dimensionless epsilon
+    N2OR_ray_no_approx$se_ff[i] = summary( lm_delta)$coefficients[2,2]    
+    
+    N2OR_ray_no_approx$KIE[i] = 1/N2OR_ray_no_approx$ff[i]
+    N2OR_ray_no_approx$se_KIE[i] = abs(-1/(N2OR_ray_no_approx$ff[i])^2*N2OR_ray_no_approx$se_ff[i])
+    
+    N2OR_ray_no_approx$pval_epsilon[i] = summary(lm_delta)$coefficients[2,4]
+}
+
+write.csv(N2OR_ray_no_approx, here("data/output/N2OR_ray_no_approx.csv"), row.names = TRUE)
+
+(N2OR_ray_no_approx)
+```
+
+#Table 2: N2OR_ray_no_approx_summary: Paste mean +/- standard error for values extracted from the Rayleigh model without approximation
+
+When the .csv file is opened in Excel, a funky symbol is included with the +/- symbol, but that can be removed with find and replace.
+```{r N2OR_ray_no_approx_summary}
+
+(N2OR_ray_no_approx_summary <- N2OR_ray_no_approx %>% mutate(
+  Multiple_R_squared =
+    paste(round(as.numeric(N2OR_ray_no_approx$Multiple_R_squared), 2)),
+  
+  RMSE_lm =
+    paste(round(as.numeric(N2OR_ray_no_approx$RMSE_lm), 4) 
+  ),
+  
+  f_min = 
+    paste(round(as.numeric(N2OR_ray_no_approx$f_min), 2)
+  ),
+  
+  f_max = 
+    paste(round(as.numeric(N2OR_ray_no_approx$f_max), 2)
+  ),
+
+  delta_s0_meas = c(
+    paste(round(as.numeric(N2OR_ray_no_approx$delta_s0_meas), 1), "\u00B1", round(as.numeric(N2OR_ray_no_approx$se_delta_s0_meas), 1))
+  ),
+  
+  delta_s0_calc = "NA",
+   
+  epsilon = c(
+    paste(round(as.numeric(N2OR_ray_no_approx$epsilon), 1), "\u00B1", round(as.numeric(N2OR_ray_no_approx$se_epsilon), 1))
+  ),  
+
+  ff = c(
+    paste(round(as.numeric(N2OR_ray_no_approx$ff), 4), "\u00B1", round(as.numeric(N2OR_ray_no_approx$se_ff), 4))
+  ),
+  
+ KIE = c(
+    paste(round(as.numeric(N2OR_ray_no_approx$KIE), 4), "\u00B1", round(as.numeric(N2OR_ray_no_approx$se_KIE), 4))
+  ),
+  
+  pval_epsilon = c(
+    as.numeric(formatC(N2OR_ray_no_approx$pval_epsilon,  format = "e", digits = 2))
+  )
+
+)%>%
+    dplyr::select(-se_delta_s0_meas, -se_delta_s0_calc, -se_epsilon, -se_ff, -se_KIE)
+)
+
+write.csv(N2OR_ray_no_approx_summary, here("data/output/N2OR_ray_no_approx_summary.csv"), row.names = TRUE)
+```
+
+#Table S6: N2OR_all_models_summary
+
+- Make a summary table with the values extracted from different models.
+  - N2OR_ray_summary: Mariotti's approximation of the Rayleigh equation; x=lnf, y = delta; all data combined
+  - N2OR_ray_no_approx_summary: Rayleigh model without approximation (BW model); x = ln(f*(1+R_s0)/(1+R_s)) and y = ln(R_s/R_s0); all data combined
+  
+##Note: We cannot directly compare RMSE values between models because the dependent variable (y) is not the same for the no approx (BW) model and Mariotti's approximation of the Rayleigh model.
+  
+```{r N2OR_all_models_summary}
+ (N2OR_all_models_summary <- rbind(
+   N2OR_ray_summary,
+   N2OR_ray_early_summary,
+   N2OR_ray_no_approx_summary
+ )
+ )
+
+write.csv(N2OR_all_models_summary, here("data/output/N2OR_all_models_summary.csv"), row.names = TRUE)
+```
+
