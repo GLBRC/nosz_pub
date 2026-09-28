@@ -24,7 +24,7 @@ cd parent_directory
 ```
 Cloning the repository will create three sub-directories under `nosz_pub`:
 - `code` includes markdown (.qmd) files with code written in R
-    - `N2OR-GC-assays-pub` - code for analyzing the GC-ECD (N<sub>2</sub>O concentration) and GC-IRMS (N<sub>2</sub>O isotopes) data presented in the main text
+    - `N2OR-GC-assays-pub` - code for analyzing the GC-ECD (N<sub>2</sub>O concentration) and GC-IRMS (N<sub>2</sub>O isotopes) data (includes reactions with N2OR and no-enzyme controls)
 - `data` - includes: experimental data (.csv files) under `input`, and `output` (initially empty)
 - `graphs` - (initially empty)
 
