@@ -1,0 +1,8 @@
+#Ignore these file types
+*.tiff
+*.csv
+*.xlsx
+
+#Monitor changes to input files
+!ECD_samples.csv
+!IRMS_input_2025-11-25.csv
