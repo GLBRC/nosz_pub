@@ -1,13 +1,16 @@
 ---
 title: "N2OR_GC_assays-pub"
-author: "Elise Rivett"
-date: "2026-01-06"
+author: "Elise Rivett and Louisa Ellis"
+date: "2026-09-28"
 output: html_document
 ---
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 # Goal: Analyze GC-ECD and GC-IRMS data for N~2~O reduction to N~2~ by purified *Pseudomonas stutzeri* (aka *Stutzerimonas stutzeri*) nitrous oxide reductase (N2OR).
+
+##Includes data and plots for reactions with N2OR and control reactions without enzyme.
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -1881,3 +1884,110 @@ write.csv(N2OR_ray_no_approx_summary, here("data/output/N2OR_ray_no_approx_summa
 write.csv(N2OR_all_models_summary, here("data/output/N2OR_all_models_summary.csv"), row.names = TRUE)
 ```
 
+#IRMS_N2OR_control_rxns: Estimate N2O umol, f, etc for control rxns
+##Report these N2O umol and f values in Table S5.
+
+##For controls: Use time-matched ECD samples for Total_N2O_umol calculations
+We don't have a good way to model N2O in IRMS samples, as there is essentially no change in [N2O] over time.
+
+Time-matched = ECD sample taken immediately before IRMS sample.
+- For an IRMS sample taken at ~8 min, time-matched ECD sample was taken at ~5 min
+- For time = 0 samples, use the average of the two ECD samples taken at time = 0 min
+```{r IRMS_N2OR_control_rxns}
+IRMS_N2OR_control_rxns <- IRMS %>% filter(
+  Replicate == "no_enzyme_1" | Replicate == "no_enzyme_2" | Replicate == "no_enzyme_3"
+)
+
+#Add Total_N2O_umole: Use the Total_N2O_umole value from the time-matched ECD sample.
+
+##Add empty column for Total_N2O_umole
+IRMS_N2OR_control_rxns$Total_N2O_umole = 0
+
+##no_enzyme_1
+##Make ECD_no_enzyme_1
+ECD_no_enzyme_1 <-   select(
+    filter(ECD_samples, Replicate == "no_enzyme_1"), Replicate, Time_min, Total_N2O_umole, N_s0)
+
+##Add ECD measurements to IRMS table
+IRMS_N2OR_control_rxns$Total_N2O_umole[(which(IRMS_N2OR_control_rxns$Replicate == "no_enzyme_1"))] = ECD_no_enzyme_1$Total_N2O_umole
+
+##Replace time 0 measurements with average of time 0 ECD measurements (N_s0)
+IRMS_N2OR_control_rxns$Total_N2O_umole[1:2] = ECD_no_enzyme_1$N_s0[1:2]
+
+
+##no_enzyme_2
+##Make ECD_no_enzyme_2
+ECD_no_enzyme_2 <-   select(
+    filter(ECD_samples, Replicate == "no_enzyme_2"), Replicate, Time_min, Total_N2O_umole, N_s0)
+
+##Add ECD measurements to IRMS table
+IRMS_N2OR_control_rxns$Total_N2O_umole[(which(IRMS_N2OR_control_rxns$Replicate == "no_enzyme_2"))] = ECD_no_enzyme_2$Total_N2O_umole[1:11]
+
+##Replace time 0 measurements with average of time 0 ECD measurements (N_s0)
+IRMS_N2OR_control_rxns$Total_N2O_umole[13:14] = ECD_no_enzyme_2$N_s0[1:2]
+
+##no_enzyme_3
+##Make ECD_no_enzyme_3
+ECD_no_enzyme_3 <-   select(
+    filter(ECD_samples, Replicate == "no_enzyme_3"), Replicate, Time_min, Total_N2O_umole, N_s0)
+
+##Add ECD measurements to IRMS table
+IRMS_N2OR_control_rxns$Total_N2O_umole[(which(IRMS_N2OR_control_rxns$Replicate == "no_enzyme_3"))] = ECD_no_enzyme_3$Total_N2O_umole
+
+##Replace time 0 measurements with average of time 0 ECD measurements (N_s0)
+IRMS_N2OR_control_rxns$Total_N2O_umole[24:25] = ECD_no_enzyme_3$N_s0[1:2]
+  
+  #Calculate f where N_s = Total_N2O_umole (calc'd from exp. decay model) and N_s0 = average of the two 0 timepoints from the ECD data
+IRMS_N2OR_control_rxns <- IRMS_N2OR_control_rxns %>% mutate(
+  f = Total_N2O_umole/N_s0,
+  one_minus_f = 1-f,
+  lnf = log(f)
+)
+
+#Write table to csv
+##One of the SI tables will be a subset of this table.
+write.csv(IRMS_N2OR_control_rxns, here("data/output/IRMS_N2OR_control_rxns.csv"), row.names = TRUE)
+```
+
+#Table S5: Write table with delta values and f values for SI.
+```{r SI_delta_control_table, eval=FALSE}
+
+(SI_N2OR_control_rxns_deltas <- IRMS_N2OR_control_rxns %>%
+  mutate(
+
+    ##Need to calculate sd for Total_N2O_umole
+    N2O_umol = c(
+    paste(round(as.numeric(IRMS_N2OR_control_rxns$Total_N2O_umole), 2))
+    ),
+    
+    ##Need to calculate sd for f
+    f = c(
+    paste(round(as.numeric(IRMS_N2OR_control_rxns$f), 2))
+    ),
+    
+    delta_18O =
+      paste(round(as.numeric(IRMS_N2OR_control_rxns$delta_18O), 1)),
+    
+    delta_N =
+      paste(round(as.numeric(IRMS_N2OR_control_rxns$delta_N), 1)),
+    
+    delta_alpha =
+      paste(round(as.numeric(IRMS_N2OR_control_rxns$delta_alpha), 1)),
+    
+    delta_beta =
+      paste(round(as.numeric(IRMS_N2OR_control_rxns$delta_beta), 1)),
+    
+    SP =
+      paste(round(as.numeric(IRMS_N2OR_control_rxns$SP), 1))    
+  ) %>%
+   
+   dplyr::select(
+     Sample_ID, Sample_name, Replicate, Time_min, N2O_umol, f, delta_18O, delta_N, delta_alpha, delta_beta, SP
+   )
+
+)
+
+#Write table to output folder
+write.csv(SI_N2OR_control_rxns_deltas, here("data/output/SI_N2OR_control_rxns_deltas.csv"), row.names = TRUE)
+
+```
