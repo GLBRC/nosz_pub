@@ -30,7 +30,8 @@ Cloning the repository will create three sub-directories under `nosz_pub`:
 
 Running the code will create additional files that will be stored in these sub-directories.
 To import and export files properly, the entire nosz_pub directory has to be cloned to your machine, and the package `here` has to be loaded in `nosz_pub`.
-- There is a .git folder in nosz_pub that allows the `here` function to identify nosz_pub as the parent directory. All filepaths in the code should work properly if nosz_pub is the parent directory.
+- There is a .git folder in nosz_pub that allows the `here` function to identify `nosz_pub` as the parent directory.
+- All filepaths in the code should work properly if `nosz_pub` is the parent directory.
 ## Add your files
 
 * [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
