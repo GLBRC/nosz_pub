@@ -1,0 +1,68 @@
+Sample_ID,Sample_name,Replicate,Total_time_min,Time_min,IRMS_bottle_volume_mL,Overpressure_volume_mL,delta_N,delta_alpha,delta_beta,delta_18O,SP,N2O_nmole_IRMS_estimate,Sample_size_mL,Notes
+MSUEH N2O-0001,no_enzyme 01,no_enzyme_1,-9.02,0,38,0.5,0.0,-0.8,0.9,39.4,-1.6,9.4,0.5,"No enzyme control 1 0.84 mM Na2S2O4, 0 min"
+MSUEH N2O-0002,no_enzyme 02,no_enzyme_1,-5.15,0,38,0.5,-0.1,-1.1,0.9,39.0,-2.0,9.4,0.5,"No enzyme control 1, 0 min duplicate"
+MSUEH N2O-0003,no_enzyme 5 min,no_enzyme_1,8.1,8.1,38,0.5,1.3,0.7,1.9,41.3,-1.2,7.2,0.5,"No enzyme control 1, 5 min"
+MSUEH N2O-0004,no_enzyme 10 min,no_enzyme_1,13.08,13.08,38,0.5,-0.3,-1.4,0.8,38.8,-2.1,8.6,0.5,"No enzyme control 1, 10 min"
+MSUEH N2O-0005,no_enzyme 15 min,no_enzyme_1,18.35,18.35,38,0.5,-0.1,-1.3,1.0,38.9,-2.3,8.4,0.5,"No enzyme control 1, 15 min"
+MSUEH N2O-0006,no_enzyme 20 min,no_enzyme_1,23.15,23.15,38,0.5,-0.2,-1.7,1.4,38.8,-3.0,8.5,0.5,"No enzyme control 1, 20 min"
+MSUEH N2O-0007,no_enzyme 25 min,no_enzyme_1,28.2,28.2,38,0.5,0.2,-0.7,1.0,39.5,-1.7,8.3,0.5,"No enzyme control 1, 25 min"
+MSUEH N2O-0008,no_enzyme 30 min,no_enzyme_1,33.48,33.48,38,0.5,0.1,-0.5,0.6,39.3,-1.2,8.5,0.5,"No enzyme control 1, 30 min"
+MSUEH N2O-0009,no_enzyme 35 min,no_enzyme_1,38.03,38.03,38,0.5,0.3,-0.2,0.8,39.8,-0.9,8.1,0.5,"No enzyme control 1, 35 min"
+MSUEH N2O-0010,no_enzyme 40 min,no_enzyme_1,43.22,43.22,38,0.5,0.0,-0.6,0.6,39.3,-1.2,8.4,0.5,"No enzyme control 1, 40 min"
+MSUEH N2O-0011,no_enzyme 45 min,no_enzyme_1,48.18,48.18,38,0.5,0.2,-0.6,1,39.7,-1.6,7.8,0.5,"No enzyme control 1, 45 min"
+MSUEH N2O-0012,no_enzyme 60 min,no_enzyme_1,63.25,63.25,38,0.5,0.5,-0.2,1.3,40,-1.6,7.1,0.5,"No enzyme control 1, 1 hr"
+MSUEH N2O-0013,"no_enzyme_2 0,1",no_enzyme_2,-31.25,0,38,0.5,0.3,-0.6,1.1,39.6,-1.7,8.3,0.5,"No enzyme control 2 0.84 mM Na2S2O4, 0 min"
+MSUEH N2O-0014,"no_enzyme_2 0,2",no_enzyme_2,-27.63333333,0,38,0.5,0.5,-0.1,1.1,40,-1.3,7.7,0.5,"No enzyme control 2, 0 min duplicate"
+MSUEH N2O-0015,no_enzyme_2 5min,no_enzyme_2,8.2,8.2,38,0.5,0.1,-0.7,0.8,39.3,-1.5,7.9,0.5,"No enzyme control 2, 5 min"
+MSUEH N2O-0016,no_enzyme_2 10 min,no_enzyme_2,14.73,14.73,38,0.5,1.5,1.3,1.8,41.6,-0.4,6.2,0.5,"No enzyme control 2, 10 min"
+MSUEH N2O-0017,no_enzyme_2 15 min,no_enzyme_2,18.23,18.23,38,0.5,0.2,-0.5,0.9,39.4,-1.4,7.8,0.5,"No enzyme control 2, 15 min"
+MSUEH N2O-0018,no_enzyme_2 20 min,no_enzyme_2,23.02,23.02,38,0.5,0.2,-0.6,0.9,39.5,-1.5,7.7,0.5,"No enzyme control, 2 20 min"
+MSUEH N2O-0019,no_enzyme_2 25 min,no_enzyme_2,27.78,27.78,38,0.5,0.2,-0.9,1.2,39.4,-2,7.4,0.5,"No enzyme control 2, 25 min"
+MSUEH N2O-0020,no_enzyme_2 30 min,no_enzyme_2,33.02,33.02,38,0.5,0.4,-0.3,1,39.6,-1.3,7.7,0.5,"No enzyme control 2, 30 min"
+MSUEH N2O-0021,no_enzyme_2 35 min,no_enzyme_2,38.05,38.05,38,0.5,1.5,1.4,1.5,41.4,-0.1,6.2,0.5,"No enzyme control 2, 35 min"
+MSUEH N2O-0022,no_enzyme_2 40 min,no_enzyme_2,42.95,42.95,38,0.5,0.2,-0.4,0.9,39.4,-1.3,7.7,0.5,"No enzyme control 2, 40 min"
+MSUEH N2O-0023,no_enzyme_2 45 min,no_enzyme_2,48.1,48.1,38,0.5,0.3,-0.4,0.9,39.6,-1.3,8.1,0.5,"No enzyme control 2, 45 min"
+MSUEH N2O-0024,rep 1 01,N2OR_1,-7.27,0,38,0.5,0.2,-0.2,0.6,39.6,-0.8,8.5,0.5,"0 min (70 ug NosZ, 0.84 mM Na2S2O4)"
+MSUEH N2O-0025,rep 1 02,N2OR_1,-3.52,0,38,0.5,0.3,0,0.7,39.9,-0.7,8.0,0.5,0 min duplicate
+MSUEH N2O-0026,rep 1 5 min,N2OR_1,8.15,8.15,38,0.6,1.5,2.6,0.5,43.4,2.1,7.4,0.6,5 min 
+MSUEH N2O-0027,rep 1 10 min,N2OR_1,13.15,13.15,38,0.7,3.2,4.6,1.7,47,2.8,6.7,0.7,10 min
+MSUEH N2O-0028,rep 1 15 min,N2OR_1,18.22,18.22,38,0.9,3.6,6.4,0.9,48.9,5.5,7.8,0.9,15 min
+MSUEH N2O-0029,rep 1 20 min,N2OR_1,23.25,23.25,38,1,4.9,8.7,1,52.1,7.6,7.2,1,20 min
+MSUEH N2O-0030,rep 1 25 min,N2OR_1,29.02,29.02,38,1.5,6.5,11.6,1.4,56.2,10.2,8.0,1.5,25 min
+MSUEH N2O-0031,rep 1 30 min,N2OR_1,33.98,33.98,38,1.8,7.3,13.1,1.6,58.6,11.5,8.8,1.8,30 min
+MSUEH N2O-0032,rep 1 35 min,N2OR_1,38.67,38.67,38,3.5,8.7,15.6,1.7,61.9,14,21.8,3.5,35 min
+MSUEH N2O-0033,rep 1 40 min,N2OR_1,43.95,43.95,38,5,10.3,18.6,1.9,66.2,16.7,32.5,5,40 min
+MSUEH N2O-0034,rep 1 45 min,N2OR_1,48.35,48.35,38,5,11,20.1,1.9,68.2,18.2,32.8,5,45 min
+MSUEH N2O-0035,rep 2 01,N2OR_2,-6.77,0,38,0.5,0.2,-0.2,0.5,39.6,-0.7,8.1,0.5,"Duplicate 0 min (70 ug NosZ, 0.84 mM Na2S2O4)"
+MSUEH N2O-0036,rep 2 02,N2OR_2,-3.18,0,38,0.5,0.2,-0.4,0.7,39.5,-1.1,8.1,0.5,"duplicate, 0 min duplicate "
+MSUEH N2O-0037,rep 2 5 min,N2OR_2,8.03,8.03,38,0.6,1.9,2.6,1.2,43.9,1.5,7.3,0.6,"duplicate, 5 min "
+MSUEH N2O-0038,rep 2 10 min,N2OR_2,13.48,13.48,38,0.7,3.2,5.2,1.3,47.3,3.9,6.8,0.7,"duplicate, 10 min"
+MSUEH N2O-0039,rep 2 15 min,N2OR_2,18.55,18.55,38,0.9,4.8,7.9,1.7,51.3,6.3,6.6,0.9,"duplicate, 15 min"
+MSUEH N2O-0040,rep 2 20 min,N2OR_2,23.02,23.02,38,1,5.6,10,1.2,54,8.8,6.9,1,"duplicate, 20 min"
+MSUEH N2O-0041,rep 2 25 min,N2OR_2,28.53,28.53,38,1.5,8.1,14.2,2,59.4,12.2,6.8,1.5,"duplicate, 25 min"
+MSUEH N2O-0042,rep 2 30 min,N2OR_2,33.77,33.77,38,1.8,9.6,16.6,2.6,63.3,14,6.4,1.8,"duplicate, 30 min"
+MSUEH N2O-0043,rep 2 35 min,N2OR_2,38.9,38.9,38,3.5,10.5,19.1,1.8,66.5,17.4,26.5,3.5,"duplicate, 35 min"
+MSUEH N2O-0044,"no_enzyme_3 0,1",no_enzyme_3,-5.67,0,38,0.5,-0.3,-1.0,0.5,38.8,-1.5,8.9,0.5,"No enzyme control 3 0.84 mM Na2S2O4, 0 min"
+MSUEH N2O-0045,"no_enzyme_3 0,2",no_enzyme_3,-2.48,0,38,0.5,0.6,0.3,0.8,40.0,-0.6,7.4,0.5,"No enzyme control 3, 0 min duplicate"
+MSUEH N2O-0046,no_enzyme_3 5min,no_enzyme_3,8.02,8.02,38,0.5,-0.1,-0.9,0.6,38.9,-1.5,8.7,0.5,"No enzyme control 3, 5 min"
+MSUEH N2O-0047,no_enzyme_3 10 min,no_enzyme_3,12.8,12.8,38,0.5,-0.2,-0.5,0.2,38.9,-0.7,8.2,0.5,"No enzyme control 3, 10 min"
+MSUEH N2O-0048,no_enzyme_3 15 min,no_enzyme_3,17.7,17.7,38,0.5,-0.3,-1.0,0.3,38.8,-1.3,8.6,0.5,"No enzyme control 3, 15 min"
+MSUEH N2O-0049,no_enzyme_3 20 min,no_enzyme_3,22.42,22.42,38,0.5,-0.3,-1.4,0.7,38.7,-2.1,8.4,0.5,"No enzyme control, 3 20 min"
+MSUEH N2O-0050,no_enzyme_3 25 min,no_enzyme_3,27.88,27.88,38,0.5,-0.4,-1.5,0.8,38.6,-2.4,8.6,0.5,"No enzyme control 3, 25 min"
+MSUEH N2O-0051,no_enzyme_3 30 min,no_enzyme_3,32.63,32.63,38,0.5,0.2,-0.6,1.1,39.6,-1.7,7.6,0.5,"No enzyme control 3, 30 min"
+MSUEH N2O-0052,no_enzyme_3 35 min,no_enzyme_3,38.03,38.03,38,0.5,-0.4,-1.4,0.6,38.6,-2.1,8.0,0.5,"No enzyme control 3, 35 min"
+MSUEH N2O-0053,no_enzyme_3 40 min,no_enzyme_3,42.73,42.73,38,0.5,0.1,-0.8,1.0,39.3,-1.8,7.7,0.5,"No enzyme control 3, 40 min"
+MSUEH N2O-0054,no_enzyme_3 45 min,no_enzyme_3,48.07,48.07,38,0.5,0.0,-0.9,0.8,39.0,-1.7,7.9,0.5,"No enzyme control 3, 45 min"
+MSUEH N2O-0055,no_enzyme_3 60 min,no_enzyme_3,64.73,64.73,38,0.5,-0.3,-1.5,0.9,38.6,-2.4,8.0,0.5,"No enzyme control 3, 60 min"
+MSUEH N2O-0056,rep 3 01,N2OR_3,-6.97,0,38,0.5,0.2,-0.4,0.8,39.3,-1.2,16.3,0.5,"0 min (70 ug NosZ, 0.84 mM Na2S2O4)"
+MSUEH N2O-0057,rep 3 02,N2OR_3,-3.23,0,38,0.5,collectors saturated: too much N2O,,,,,-,0.5,0 min duplicate
+MSUEH N2O-0058,rep 3 5 min,N2OR_3,8.23,8.23,38,0.6,1.7,2.2,1.2,43.4,1.0,12.3,0.6,5 min 
+MSUEH N2O-0059,rep3 10 min,N2OR_3,13.27,13.27,38,0.7,3.1,4.7,1.4,46.4,3.3,11.5,0.7,10 min
+MSUEH N2O-0060,rep 3 15 min,N2OR_3,18.6,18.6,38,0.9,3.3,6.0,0.6,48.2,5.4,14.0,0.9,15 min
+MSUEH N2O-0061,rep 3 20 min,N2OR_3,23.85,23.85,38,1,4.8,7.8,1.7,51.4,6.2,12.3,1,20 min
+MSUEH N2O-0062,rep 3 25 min,N2OR_3,28.83,28.83,38,1.5,5.7,10.1,1.4,54.3,8.7,15.3,1.5,25 min
+MSUEH N2O-0063,rep 3 30 min,N2OR_3,33.5,33.5,38,1.8,7.7,13.0,2.5,58.3,10.6,13.0,1.8,30 min
+MSUEH N2O-0064,rep 3 35 min,N2OR_3,38.43,38.43,38,3.5,7.5,13.9,1.1,59.5,12.8,49.7,3.5,35 min
+MSUEH N2O-0065,rep 3 40 min,N2OR_3,43.53,43.53,38,5,10.0,17.6,2.3,64.6,15.3,83.3,5,40 min
+MSUEH N2O-0066,rep 3 45 min,N2OR_3,48.53,48.53,38,5,10.0,18.7,1.2,66.1,17.5,94.0,5,45 min
+MSUEH N2O-0067,rep 3 60 min,N2OR_3,70.4,70.4,38,5,collectors saturated: too much N2O,,,,,-,5,60 min
