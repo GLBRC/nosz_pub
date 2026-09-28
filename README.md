@@ -4,10 +4,33 @@
 
 ## Getting started
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+To clone the remote repository to your local drive and create a new directory on your local drive at the same time:
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- Go to the parent directory where you want to put this repository:
 
+```
+cd parent_directory
+```
+- Clone this remote repo into a new sub-directory and navigate to that sub-directory.
+    - For GitHub (non-GLBRC) users:
+```
+    git clone https://github.com/GLBRC/nosz_pub
+    cd nosz_pub
+```
+    - For GLBRC users:
+```
+    git clone https://gitpub.wei.wisc.edu/rivettel/nosz_pub.git
+    cd nosz_pub
+```
+Cloning the repository will create three sub-directories under `nosz_pub`:
+- `code` includes markdown (.qmd) files with code written in R
+    - `N2OR-GC-assays-pub` - code for analyzing the GC-ECD (N<sub>2</sub>O concentration) and GC-IRMS (N<sub>2</sub>O isotopes) data presented in the main text
+- `data` - includes: experimental data (.csv files) under `input`, and `output` (initially empty)
+- `graphs` - (initially empty)
+
+Running the code will create additional files that will be stored in these sub-directories.
+To import and export files properly, the entire nosz_pub directory has to be cloned to your machine, and the package `here` has to be loaded in `nosz_pub`.
+- There is a .git folder in nosz_pub that allows the `here` function to identify nosz_pub as the parent directory. All filepaths in the code should work properly if nosz_pub is the parent directory.
 ## Add your files
 
 * [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
