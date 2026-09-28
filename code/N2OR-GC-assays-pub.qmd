@@ -1991,3 +1991,59 @@ write.csv(IRMS_N2OR_control_rxns, here("data/output/IRMS_N2OR_control_rxns.csv")
 write.csv(SI_N2OR_control_rxns_deltas, here("data/output/SI_N2OR_control_rxns_deltas.csv"), row.names = TRUE)
 
 ```
+
+#Figure S3a. Plot delta_N values (bulk, alpha, beta, and SP) vs Time_min for no_enzyme_controls 1-3. Facet plot: split out by delta_type.
+```{r plot_control_delta_N_v_time_facet}
+#Pivot table
+IRMS_N2OR_control_rxns_tidy <- IRMS_N2OR_control_rxns %>%
+  pivot_longer(c(delta_N, delta_alpha, delta_beta, SP), names_to = "delta_15N", values_to = "delta_15N_values")
+
+IRMS_N2OR_control_rxns_tidy$delta_15N <- factor(IRMS_N2OR_control_rxns_tidy$delta_15N, levels = c("delta_N", "delta_alpha", "delta_beta", "SP"), labels = c(
+    "bold(delta)^15*bold(N)^bulk",    
+    "bold(delta)^15*bold(N)^alpha",
+    "bold(delta)^15*bold(N)^beta",
+    "bold(delta)^15*bold(N)^SP"
+  )
+)
+
+#Plot
+(plot_control_delta_15N_v_time_facet <- ggplot()+
+
+  geom_point(data = IRMS_N2OR_control_rxns_tidy, mapping = 
+         aes(x = Time_min, y = delta_15N_values, color = Replicate, shape = Replicate), size = 2)+
+
+  facet_wrap(~`delta_15N`, nrow = 2, labeller = label_parsed)+
+    
+   geom_vline(data = IRMS_N2OR_control_rxns_tidy, mapping = aes(xintercept = 0))+
+    scale_color_manual(values = c(
+      "no_enzyme_1" = "#CC79A7",
+      "no_enzyme_2" = "#a6cee3",
+      "no_enzyme_3" = "#1E5C19"
+    )) +
+    scale_shape_manual(values = c(
+      "no_enzyme_1" = 8,
+      "no_enzyme_2" = 17,
+      "no_enzyme_3" = 15
+    )) +
+  
+  
+  #Make graph pretty
+  theme_bw()+
+  theme(panel.grid.major = element_blank())+
+  theme(panel.grid.minor = element_blank())+
+    
+  #format axis titles
+  theme(axis.title = element_text(size = 16))+
+  theme(axis.text = element_text(size = 16))+
+  xlab(expression(paste(bold("Time (min)"))))+
+  ylab(expression(paste(bold(delta^15),bold(N),bold(" (\u2030)"),sep="")))+ 
+  
+  theme(axis.line = element_line(size=1, colour = "black"))+
+  theme(axis.ticks = element_line(color="black", size=1))+
+  #theme(axis.ticks.length = unit(0.2, "cm"))+
+  theme(axis.title.y=element_text(margin=margin(0,20,0,0),size=12,face="bold",angle=90,hjust=0.5,vjust=1.1))+
+  theme(axis.title.x=element_text(margin=margin(10,20,0,0),size=12,face="bold"))
+)    
+
+ggsave(plot_control_delta_15N_v_time_facet, filename = here("graphs/plot_control_delta_15N_v_time_facet.tiff"), height = 4, width = 6, units = "in")
+```
