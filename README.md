@@ -33,6 +33,16 @@ To import and export files properly, the entire `nosz_pub` directory has to be c
 - There is a .git folder in nosz_pub that allows the `here` function to identify `nosz_pub` as the parent directory.
 - All filepaths in the code should work properly if `nosz_pub` is the parent directory.
 
+## Data
+### N2OR-GC-assays-pub
+- ECD_samples.csv
+    - All GC-ECD data collected for reactions with N2OR and no-enzyme control reactions
+    - Used to plot Figure 2
+    - Used for exponential decay modeling
+- IRMS_input_2025-11-25.csv
+    - All GC-IRMS data collected for reactions with N2OR and no-enzyme control reactions
+    - Used to plot Figure 3 and Figure S3
+    - Used to prepare Table 2 and Tables S4-S6
 
 # Editing this README
 
