@@ -67,7 +67,17 @@ Running the code will create additional files that will be stored in these sub-d
     - Rayleigh model without approximation (all data)
 - Plot delta values for no-enzyme control reactions
     - No-enzyme controls: Assume N<sub>2</sub>O concentration and f values are equal to the time-matched GC-ECD values
+## Authors
+- Louisa R. Ellis
+- Elise D. Rivett
+## References
+Bigeleisen, J. and Wolfsberg, M.: Theoretical and experimental aspects of isotope effects in chemical kinetics, Adv Chem Phys, 1, 15-76, 1958.
 
+Hayes, J.: An Introduction to Isotopic Calculations, Woods Hole Oceanographic Insitution, https://doi.org/10.1575/1912/27058, 2004.
+
+Mariotti, A., Germon, J. C., Hubert, P., Kaiser, P., Letolle, R., Tardieux, A., and Tardieux, P.: Experimental determination of nitrogen kinetic isotope fractionation: Some principles; illustration for the denitrification and nitrification processes, Plant Soil, 62, 413–430, https://doi.org/10.1007/BF02374138, 1981.
+
+Yu L, Harris E, Lewicka-Szczebak D, et al. What can we learn from N2O isotope data? – Analytics, processes and modelling. Rapid Commun Mass Spectrom. 2020; 34:e8858. https://doi.org/10.1002/rcm.8858
 
 # Editing this README
 
