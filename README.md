@@ -77,6 +77,6 @@ Hayes, J.: An Introduction to Isotopic Calculations, Woods Hole Oceanographic In
 
 Mariotti, A., Germon, J. C., Hubert, P., Kaiser, P., Letolle, R., Tardieux, A., and Tardieux, P.: Experimental determination of nitrogen kinetic isotope fractionation: Some principles; illustration for the denitrification and nitrification processes, Plant Soil, 62, 413–430, https://doi.org/10.1007/BF02374138, 1981.
 
-Yu L, Harris E, Lewicka-Szczebak D, et al. What can we learn from N~2~O isotope data? – Analytics, processes and modelling. Rapid Commun Mass Spectrom. 2020; 34:e8858. https://doi.org/10.1002/rcm.8858
+Yu L, Harris E, Lewicka-Szczebak D, et al. What can we learn from N<sub>2</sub>O isotope data? – Analytics, processes and modelling. Rapid Commun Mass Spectrom. 2020; 34:e8858. https://doi.org/10.1002/rcm.8858
 
 
