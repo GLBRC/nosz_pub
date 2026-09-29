@@ -1777,7 +1777,7 @@ for (i in 1:n) {
   
 
   
-  #Apply standard Rayleigh model where x = `-flnf/(1-f)` and y = delta_p, delta_alpha, or delta_beta
+  #Apply standard Rayleigh model without approximation where x = x = ln(f*(1+R_s0)/(1+R_s)) and y = y = ln(R_s/R_s0)
     lm_delta <- lm(y ~ x, data = data)
     
     #Fill in table w/ values extracted from standard Rayleigh model
