@@ -1,7 +1,7 @@
 # nosz_pub
 
 ## Description
-This repository includes the experimental data collected for the reduction of N<sub>2</sub>O to N<sub>2</sub> by purified *Stutzerimonas stutzeri* (*Pseudomonas stutzeri*) nitrous oxide reductase (N2OR) and the R code used to analyze these data. The code used to prepare dual isotope plots (boxplots or isotope maps) is also included.
+This repository includes the experimental data collected for the *in vitro* reduction of N<sub>2</sub>O to N<sub>2</sub> by purified *Stutzerimonas stutzeri* (*Pseudomonas stutzeri*) nitrous oxide reductase (N2OR) and the R code used to analyze these data. The code used to prepare dual isotope plots (boxplots or isotope maps) is also included.
 ## Getting started
 
 To clone the remote repository to your local drive and create a new directory on your local drive at the same time:
@@ -25,7 +25,7 @@ cd parent_directory
 Cloning the repository will create three sub-directories under `nosz_pub`:
 - `code` includes markdown (.qmd) files with code written in R
     - `N2OR-GC-assays-pub` - code for analyzing the GC-ECD (N<sub>2</sub>O concentration) and GC-IRMS (N<sub>2</sub>O isotopes) data (includes reactions with N2OR and no-enzyme controls)
-    - `BOXPLOT_SP_18O_pub` - code for making the dual isotope plot with endmember values and mixing lines shown in Figure 4. The endmember delta ranges and in vivo mixing lines and reduction line are from Yu, et al., 2020.
+    - `BOXPLOT_SP_18O_pub` - code for making the dual isotope plot with endmember values and mixing lines shown in Figure 4. The endmember delta ranges and *in vivo* mixing lines and reduction line are from Yu, et al., 2020.
     - `isotopemap_pub` - code for making the dual isotope plots shown in Figure S4
 - `data` - includes: experimental data (.csv files) under `input`, and `output` (initially empty)
 - `graphs` - (initially empty)
