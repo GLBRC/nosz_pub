@@ -1419,90 +1419,6 @@ When the .csv file is opened in Excel, a funky symbol is included with the +/- s
 write.csv(N2OR_ray_early_summary, here("data/output/N2OR_ray_early_summary.csv"), row.names = TRUE)
 ```
 
-#Bulk N: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
-
-Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
-ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
-
-  - slope = epsilon
-
-  - intercept = 0
-```{r N2OR_lm_BW_N}
-N2OR_lm_BW_N <- lm(
-  log(R_N/R_N_0) ~ log(f*(1+R_N_0)/(1+R_N)), data = IRMS_N2OR_rxns
-)
-
-summary(N2OR_lm_BW_N)
-
-#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
-##intercept
-summary(N2OR_lm_BW_N)$coefficients[1,1]*1000
-
-##slope (epsilon)
-summary(N2OR_lm_BW_N)$coefficients[2,1]*1000
-```
-The epsilon value for bulk N calculated using the Bigeleisen-Wolfsburg version of the Rayleigh equation (N2OR_lm_BW_N) is very similar to the epsilon value calculated using Mariotti's approximation of the Rayleigh equation (N2OR_lm_delta_N).
-
-#N_alpha: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
-
-Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
-ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
-```{r N2OR_lm_BW_alpha}
-N2OR_lm_BW_alpha <- lm(
-  log(R_alpha/R_alpha_0) ~ log(f*(1+R_alpha_0)/(1+R_alpha)), data = IRMS_N2OR_rxns
-)
-
-summary(N2OR_lm_BW_alpha)
-
-#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
-##intercept
-summary(N2OR_lm_BW_alpha)$coefficients[1,1]*1000
-
-##slope (epsilon)
-summary(N2OR_lm_BW_alpha)$coefficients[2,1]*1000
-```
-#N_beta: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
-
-Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
-ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
-```{r N2OR_lm_BW_beta}
-N2OR_lm_BW_beta <- lm(
-  log(R_beta/R_beta_0) ~ log(f*(1+R_beta_0)/(1+R_beta)), data = IRMS_N2OR_rxns
-)
-
-summary(N2OR_lm_BW_beta)
-
-#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
-##intercept
-summary(N2OR_lm_BW_beta)$coefficients[1,1]*1000
-
-##slope (epsilon)
-summary(N2OR_lm_BW_beta)$coefficients[2,1]*1000
-```
-#delta_18O: Name the linear regression model for the Rayleigh equation for substrate without approximation where y = ln(f*(1+R_s0)/(1+R_s)) and x = ln(R_s/R_s0) (N2OR1-3 combined)
-
-Eq. 39 from Hayes, 2004 and Eq. V.17 from Bigeleisen and Wolfsburg, 1958:
-ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
-```{r N2OR_lm_BW_18O}
-N2OR_lm_BW_18O <- lm(
-  log(R_18O/R_18O_0) ~ log(f*(1+R_18O_0)/(1+R_18O)), data = IRMS_N2OR_rxns
-)
-
-summary(N2OR_lm_BW_18O)
-
-#Multiply the intercept and slope (epsilon) by 1000 to convert to per mil:
-##intercept
-summary(N2OR_lm_BW_18O)$coefficients[1,1]*1000
-
-##slope (epsilon)
-summary(N2OR_lm_BW_18O)$coefficients[2,1]*1000
-```
-- The epsilon value for delta_18O changes the most when the Rayleigh model without approximation (BW) is used instead of Mariotti's approximation of the Rayleigh equation (where y = delta and x = lnf).
-  - w/o approx: epsilon_18O  = -13.5 per mil
-  - w/ approx: epsilon_18O = -14.2 per mil
-
-This is not surprising, as epsilon and especially delta_s0 are the largest for 18O (compared to 15N). Mariotti's approximation of the Rayleigh equation assumes that delta_s0 and epsilon are both small compared to 1 (i.e, relatively close to 0 per mil).
-
 #IRMS_N2OR_BW: Make table with BW model values for x and y
 
 This will make the code for graphing easier to read.
@@ -1814,6 +1730,13 @@ write.csv(N2OR_ray_no_approx, here("data/output/N2OR_ray_no_approx.csv"), row.na
 
 (N2OR_ray_no_approx)
 ```
+- The epsilon values for bulk N, N_alpha, N_beta, and SP calculated using the Bigeleisen-Wolfsburg version of the Rayleigh equation without approximation (N2OR_lm_BW_N) are very similar to the epsilon values calculated using Mariotti's approximation of the Rayleigh equation (N2OR_lm_delta_N).
+
+- The epsilon value for delta_18O changes the most when the Rayleigh model without approximation (BW) is used instead of Mariotti's approximation of the Rayleigh equation (where y = delta and x = lnf).
+  - w/o approx: epsilon_18O  = -13.5 per mil
+  - w/ approx: epsilon_18O = -14.2 per mil
+
+- This is not surprising, as epsilon and especially delta_s0 are the largest for 18O (compared to 15N). Mariotti's approximation of the Rayleigh equation assumes that delta_s0 and epsilon are both small compared to 1 (i.e, relatively close to 0 per mil).
 
 #Table 2: N2OR_ray_no_approx_summary: Paste mean +/- standard error for values extracted from the Rayleigh model without approximation
 
