@@ -25,6 +25,8 @@ cd parent_directory
 Cloning the repository will create three sub-directories under `nosz_pub`:
 - `code` includes markdown (.qmd) files with code written in R
     - `N2OR-GC-assays-pub` - code for analyzing the GC-ECD (N<sub>2</sub>O concentration) and GC-IRMS (N<sub>2</sub>O isotopes) data (includes reactions with N2OR and no-enzyme controls)
+    - `BOXPLOT_SP_18O_pub` - code for making the dual isotope plot with endmember values and mixing lines shown in Figure 4
+    - `isotopemap_pub` - code for making the dual isotope plots shown in Figure S4
 - `data` - includes: experimental data (.csv files) under `input`, and `output` (initially empty)
 - `graphs` - (initially empty)
 
@@ -33,7 +35,7 @@ To import and export files properly, the entire `nosz_pub` directory has to be c
 - There is a .git folder in nosz_pub that allows the `here` function to identify `nosz_pub` as the parent directory.
 - All filepaths in the code should work properly if `nosz_pub` is the parent directory.
 
-## Data
+## Input Data
 ### N2OR-GC-assays-pub
 - ECD_samples.csv
     - All GC-ECD data collected for reactions with N2OR and no-enzyme control reactions
@@ -43,6 +45,10 @@ To import and export files properly, the entire `nosz_pub` directory has to be c
     - All GC-IRMS data collected for reactions with N2OR and no-enzyme control reactions
     - Used to plot Figure 3 and Figure S3
     - Used to prepare Table 2 and Tables S4-S6
+### isotopemap_pub
+- SI_N2OR_rxns_deltas.csv
+    - Isotope data for reactions with N2OR; also generated as output of `N2OR-GC-assays-pub`
+    - Used to plot Figure S4 (and prepare Table S4)
 
 ## General outline for analyzing experimental data - N2OR-GC-assays-pub
 - Load packages
