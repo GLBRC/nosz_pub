@@ -44,6 +44,25 @@ To import and export files properly, the entire `nosz_pub` directory has to be c
     - Used to plot Figure 3 and Figure S3
     - Used to prepare Table 2 and Tables S4-S6
 
+## General outline for analyzing experimental data - N2OR-GC-assays-pub
+- Load packages
+- Load GC-ECD data (N<sub>2</sub>O concentration)
+    - Calculate initial N<sub>2</sub>O
+    - Fit exponential decay model to reactions with N2OR (treat replicates individually)
+- Load GC-IRMS data (N<sub>2</sub>O isotopes)
+    - Remove unneeded data (where detector was saturated)
+- Calculate additional values needed for analysis
+    - Calculate R and delta_s0
+    - Replicates with enzyme: Calculate N<sub>2</sub>O concentration and f using the exponential decay model (treat replicates individually)
+- Combine (pool) data from all replicates with N2OR
+- Apply the standard Rayleigh model (for substrate)
+    - Mariotti's approximation of the Rayleigh model (all data)
+    - Mariotti's approximation of the Rayleigh model (early data, f > 0.4)
+    - Rayleigh model without approximation (all data)
+- Plot delta values for no-enzyme control reactions
+    - No-enzyme controls: Assume N<sub>2</sub>O concentration and f values are equal to the time-matched GC-ECD values
+
+
 # Editing this README
 
 When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
