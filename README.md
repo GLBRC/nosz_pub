@@ -1,7 +1,7 @@
 # nosz_pub
 
-
-
+## Description
+This repository includes the experimental data collected for the reduction of N<sub>2</sub>O to N<sub>2</sub> by purified *Stutzerimonas stutzeri* (*Pseudomonas stutzeri) nitrous oxide reductase (N2OR) and the R code used to analyze these data. The code used to prepare dual isotope plots  (isotope maps) is also included.
 ## Getting started
 
 To clone the remote repository to your local drive and create a new directory on your local drive at the same time:
