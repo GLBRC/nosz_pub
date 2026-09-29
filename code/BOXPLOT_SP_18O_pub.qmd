@@ -1,0 +1,246 @@
+---
+title: "BOXPLOT_SP_18O_pub"
+author: "Louisa Ellis and Elise Rivett"
+date: "2026-09-21"
+output: html_document
+---
+
+# The goal of this script is to create kendall plots of δ15NSP vs δ18O in order to visualize reduction lines created from N2O reduction data. The final plot includes all endmember boxes and mixing lines, our in vitro reduction line, and the in vivo reduction line (median of previously published data)
+
+- The *in vitro* isotopic data was measured for N~2~O reduction to N~2~ by purified *Pseudomonas stutzeri* (aka *Stutzerimonas stutzeri*) nitrous oxide reductase (N2OR) in the current study.
+- The *in vivo* isotopic data was previously published by Yu, L., et al., 2020 (see reference below) and includes the following:
+  - Endmember values for boxes
+  - Slope of the *in vivo* reduction line (median)
+
+## Reference
+
+All data plotted for in vivo reduction lines and endmember values are from:
+Yu L, Harris E, Lewicka-Szczebak D, et al. What can we learn from N2O isotope data? – Analytics, processes and modelling. Rapid Commun Mass Spectrom. 2020; 34:e8858. https://doi.org/10.1002/rcm.8858
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Load packages
+```{r load_packages}
+library(ggplot2)
+library(here) #Used to create file paths relative to top-level directory.
+
+```
+
+#Input data
+```{r input_data}
+# ----------------------------
+# 1) In vitro data (δ-space points)
+# ----------------------------
+df <- data.frame(
+  d18O = c(39.6, 39.9, 43.4, 47.0, 48.9, 52.1, 56.2, 58.6, 61.9, 66.2, 68.2, 39.6, 39.5, 43.9, 47.3, 51.3, 54.0, 59.4, 63.3, 66.5, 39.3, 43.4, 46.4, 48.2, 51.4, 54.3, 58.3, 59.5, 64.6, 66.1),
+  SP   = c(-0.8, -0.7, 2.1, 2.8, 5.5, 7.6, 10.2, 11.5, 14.0, 16.7, 18.2, -0.7, -1.1, 1.5, 3.9, 6.3, 8.8, 12.2, 14.0, 17.4, -1.2, 1, 3.3, 5.4, 6.2, 8.7, 10.6, 12.8, 15.3, 17.5)
+)
+```
+
+#Make boxes
+```{r make_boxes}
+# ----------------------------
+# 2) BOXES (δ-space ranges from Yu)
+# ----------------------------
+bacterial_box <- data.frame(
+  xmin = 16.7, xmax = 23.3,   # δ18O range - range for soil incubations
+  ymin = -7.5, ymax = 3.7    # SP range
+)
+
+fungal_box <- data.frame(
+  xmin = 42.0, xmax = 55.1,    # δ18O range after normalization to soil water d18O
+  ymin = 27.2, ymax = 39.9    # SP range
+)
+
+nitrifier_box <- data.frame(  #nitrifier-denitrification
+  xmin = 12.4, xmax = 19.4,   # δ18O range
+  ymin = -13.6, ymax = 1.9    # SP range
+)
+
+nitrification_box <- data.frame(
+  xmin = 20.5, xmax = 26.5,   # δ18O range
+  ymin = 32.0, ymax = 38.7    # SP range
+)
+```
+
+#Define midpoints for each box
+```{r box_midpoints}
+#Bacterial denitrification (bD)
+d18O0_bD <- 19.0        #median for soil incubation studies
+SP0_bD <- -1.9          #median (and mean) for pure culture studies
+
+#Nitrification (Ni)
+d18O0_Ni <- 23.5         #atmospheric O2
+SP0_Ni <- 34.6          #median
+
+#Fungal denitrification (fD)
+d18O0_fD <- 46.9       #median (pure culture studies, normalized to soil water d18O)
+SP0_fD <- 33.6         #median (pure culture studies)
+
+```
+
+
+#Define reduction lines
+```{r reduction_lines}
+# ----------------------------
+# 3) REDUCTION LINES (use ε values to get slope)
+#    slope = εSP / ε18O
+# ----------------------------
+
+# --- Yu reduction ε values (use median values) ---
+eps18O_yu <- -15.9      # median for controlled soil incubations
+epsSP_yu  <- -6.0       # median for controlled soil incubations
+slope_yu <- 0.36        # median value for εSP/ε18O in Yu, et al., 2020.
+
+# choose a starting point for Yu reduction line in δ-space:
+# (often you pick an initial/source point; you can use box center or your minimum-reduction sample)
+# Use the initial delta values for our experiment
+d18O0_yu <- 39.5        # (starting δ18O)
+SP0_yu   <- -1.2         # (starting SP)
+int_yu   <- SP0_yu - slope_yu * d18O0_yu
+
+# --- Your reduction ε values (in vitro ε) ---
+eps18O_you <- -13.5     # in vitro study
+epsSP_you  <- -9.5      # in vitro study
+slope_you  <- epsSP_you / eps18O_you
+
+# choose your starting point in δ-space:
+# Use initial d18O and SP values for our experiment (the average of the initial deltas from all 6 replicates, see Table 2 in MS)
+d18O0_you <- 39.5       # in vitro study
+SP0_you   <- -1.2        # in vitro study
+int_you   <- SP0_you - slope_you * d18O0_you
+
+
+# 4) DEFINE WHERE LINES END
+# (extend to right side of your data)
+# ----------------------------
+x_end <- max(df$d18O) + 0
+x_end_yu <- max(df$d18O) + 7.33
+x_end_you <- max(df$d18O) + 4.33 #calculated d18O value at the end of rxn (f = 0)
+y_end_yu  <- SP0_yu + slope_yu  * (x_end_yu - d18O0_yu)
+y_end_you <- SP0_you + slope_you * (x_end_you - d18O0_you)
+```
+
+#Figure 4: Plot bD, fD, NI, and nD and mixing lines
+```{r boxplot_mix}
+# ----- Kendall plot with bD, fD, NI, and nD
+p_kendallplot_mix <- ggplot() +
+  
+  # bacterial box
+  geom_rect(data = bacterial_box,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = "lightskyblue", alpha = 0.2) +
+  
+  # fungal box
+  geom_rect(data = fungal_box,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = "seagreen3", alpha = 0.2) +
+  
+  #nitrifier box (nitrifier-denitrification)
+  geom_rect(data = nitrifier_box,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = "salmon", alpha = 0.2) +
+  
+  # nitrification box
+  geom_rect(data = nitrification_box,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = "darkorchid4", alpha = 0.2) +
+  
+  geom_text(data = bacterial_box,
+            aes(x = xmin, y = ymax, label = "bD"),
+            hjust = 0, vjust = 1, nudge_x = 0.2, nudge_y = -8,
+            size = 6, fontface = "bold") +
+  
+  geom_text(data = fungal_box,
+            aes(x = xmin, y = ymax, label = "fD"),
+            hjust = 0, vjust = 1, nudge_x = 0.2, nudge_y = -0.5,
+            size = 6, fontface = "bold") +
+  
+  geom_text(data = nitrifier_box,
+            aes(x = xmin, y = ymax, label = "nD"),
+            hjust = 0, vjust = 1, nudge_x = 0.2, nudge_y = -12,
+            size = 6, fontface = "bold") +
+  
+  geom_text(data = nitrification_box,
+            aes(x = xmin, y = ymax, label = "Ni"),
+            hjust = 0, vjust = 1, nudge_x = 0.2, nudge_y = -0.5,
+            size = 6, fontface = "bold") +
+  
+  # your points
+  geom_point(data = df, aes(x = d18O, y = SP,
+                            color = "Data"), size = 3) +
+  
+  # Yu reduction line (segmented)
+  geom_segment(
+    aes(x = d18O0_yu, y = SP0_yu,
+        xend = x_end_yu, yend = y_end_yu,
+        color = "Yu et al."), linetype = "dashed", linewidth = 1.2
+  ) +
+  
+  # Your reduction line (segmented)
+  geom_segment(
+    aes(x = d18O0_you, y = SP0_you,
+        xend = x_end_you, yend = y_end_you,
+        color = "Purified N2OR reduction line"), linewidth = 1.2
+  ) +
+  
+  #Ni-bD mixing line
+  geom_segment(
+    aes(x = d18O0_bD, y = SP0_bD,
+        xend = d18O0_Ni, yend = SP0_Ni,
+        color = "Mixing line"), linewidth = 1.2
+  )+
+  
+  #fD-bD mixing line
+  geom_segment(
+    aes(x = d18O0_bD, y = SP0_bD,
+        xend = d18O0_fD, yend = SP0_fD,
+        color = "Mixing line"), linewidth = 1.2
+  )+
+  
+  scale_color_manual(
+    values = c(
+      "Yu et al." = "black",
+      "Purified N2OR reduction line" = "red",
+      "Data" = "darkblue",
+      "Mixing line" = "gray"
+    ),
+    
+    breaks = c(
+       "Data", "Purified N2OR reduction line", "Yu et al.", "Mixing line"
+    ),
+    
+    labels = c(
+      expression("Purified "*N[2]*"OR "*(delta^15*N^SP)/(delta^18*O)),
+      expression("Purified "*N[2]*"OR "*(epsilon^15*N^SP)/(epsilon^18*O)),
+      expression(italic("In vivo") ~ (epsilon^15*N^SP)/(epsilon^18*O)),
+      expression("Mixing line")
+    )
+  ) +
+  
+  labs(
+    # title = expression("N"[2]*"O Dual Isotope Plot"),
+    #subtitle = "Mixing lines start at bacterial box center (reduction origin)",
+    x = expression(bold(delta^18*O ~ "(‰)")),
+    y = expression(bold(delta^15*N^SP ~ "(‰)")),
+    color = expression(N[2]*"OR Reduction Lines")
+  ) +
+  theme_classic () +
+  theme(
+    axis.title = element_text(size =18, face = "bold"),
+    axis.text = element_text(size = 16),
+    legend.title = element_text(size = 18),
+    legend.text = element_text(size =16),
+    panel.border = element_rect( color = "black", fill = NA, linewidth =1),
+    axis.line = element_line(color = "black"),
+  )
+
+print(p_kendallplot_mix) 
+ggsave (
+  filename = here("graphs/boxplot/Boxplot_SP_O_mix.tiff"),
+  plot =p_kendallplot_mix,
+  width = 8, height = 5, units = "in",
+  dpi = 600, compression = "lzw")
+```
