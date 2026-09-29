@@ -11,7 +11,10 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ##Includes data and plots for reactions with N2OR and control reactions without enzyme.
 
-
+##References
+  - Bigeleisen, J. and Wolfsberg, M.: Theoretical and experimental aspects of isotope effects in chemical kinetics, Adv Chem Phys, 1, 15-76, 1958.
+  - Hayes, J.: An Introduction to Isotopic Calculations, Woods Hole Oceanographic Insitution, https://doi.org/10.1575/1912/27058, 2004.
+  - Mariotti, A., Germon, J. C., Hubert, P., Kaiser, P., Letolle, R., Tardieux, A., and Tardieux, P.: Experimental determination of nitrogen kinetic isotope fractionation: Some principles; illustration for the denitrification and nitrification processes, Plant Soil, 62, 413–430, https://doi.org/10.1007/BF02374138, 1981.
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -1136,6 +1139,7 @@ blank_tb <- function(n, m = 1) {
 
 
 #Make table with values extracted from the Rayleigh model (x=lnf, y = delta) for delta_N, delta_alpha, delta_beta, SP, and delta_18O (N2OR1-3 combined; all data)
+  - Use Mariotti's approximation of the Rayleigh equation for substrate.
 
   - Make a separate row in the table for each delta type (delta_N, delta_alpha, delta_beta, SP, and delta_18O)
 ```{r N2OR_ray_table, warning=FALSE}
@@ -1278,7 +1282,7 @@ write.csv(N2OR_ray_summary, here("data/output/N2OR_ray_summary.csv"), row.names 
 ```
 
 #Early data: Make table with values extracted from the Rayleigh model (x=lnf, y = delta) for delta_N, delta_alpha, delta_beta, SP, and delta_18O (N2OR1-3 combined; f >= 0.4)
-
+  - Use Mariotti's approximation of the Rayleigh equation for substrate.
   - Make a separate row in the table for each delta type (delta_N, delta_alpha, delta_beta, SP, and delta_18O)
 ```{r N2OR_ray_early_table, warning=FALSE}
 #n = number of loops; in this case, the number of rows in the table
@@ -1635,10 +1639,6 @@ ln(R_s/R_s0) = epsilon*ln(f*(1+R_s0)/(1+R_s))
   - slope = epsilon
 
   - intercept = 0
-  
-##References
-  - Hayes, J.: An Introduction to Isotopic Calculations, Woods Hole Oceanographic Insitution, https://doi.org/10.1575/1912/27058, 2004.
-  - Bigeleisen, J. and Wolfsberg, M.: Theoretical and experimental aspects of isotope effects in chemical kinetics, Adv Chem Phys, 1, 15-76, 1958.
 ```{r N2OR_ray_no_approx, warning=FALSE}
 #n = number of loops; in this case, the number of rows in the table
 n <- 5
