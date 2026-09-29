@@ -1,0 +1,212 @@
+---
+title: "isotopemap"
+author: "Elise Rivett, Louisa Ellis"
+date: "2026-09-22"
+output: html_document
+---
+#Code for plotting dual isotope maps for isotope ratios in N2O measured during N2O consumption by purified Stutzerimonas stutzeri nitrous oxide reductase (N2OR).
+
+- The code in this markdown file is based on the R script Louisa wrote: isotopemapping_withlegend_9212026.R
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Load packages
+```{r load_packages}
+library(ggplot2)
+library(ggpmisc)
+library(egg)
+library(grid)
+library(here) #Used to create file paths relative to top-level directory.
+```
+
+#Import data
+```{r input_data}
+data <- read.csv(here("data/input/SI_N2OR_rxns_deltas.csv"),header = TRUE)
+print(names(data))
+```
+
+#Figure S4a: Plot delta_18O vs delta_N
+```{r 18O_Nbulk}
+x_col <- "delta_N"
+y_col <- "delta_18O"
+print(x_col)
+print(y_col)
+
+data[[x_col]] <- as.numeric(as.character(data[[x_col]]))
+data[[y_col]] <- as.numeric(as.character(data[[y_col]]))
+
+plot_data <- data[!is.na(data[[x_col]]) & !is.na(data[[y_col]]), ]
+
+p_18O_Nbulk <- ggplot(plot_data, aes(x = .data[[x_col]], y = .data[[y_col]])) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggpmisc::stat_poly_eq(
+    formula = y ~ x,
+    aes(label = after_stat(paste0("italic(", eq.label,")"))),
+    parse =TRUE,
+    size = 5
+  ) +
+  labs(
+    x = expression(bold(delta^15*N^bulk)),
+    y = expression(bold(delta^18*O ~ "(‰)"))
+  ) +
+  theme_classic () +
+  theme( 
+    axis.title = element_text(size =18, face = "bold"),
+    axis.text = element_text(size = 14),
+    legend.title = element_blank(),
+    legend.text = element_text(size =18),
+    panel.border = element_rect( color = "black", fill = NA, linewidth =1),
+    axis.line = element_line(color = "black")
+  )
+
+print(p_18O_Nbulk)
+ggsave (
+  filename = here("graphs/isotopemaps/isotopemap_18O_Nbulk_92126.tiff"),
+  plot =p_18O_Nbulk,
+  width = 6, height = 4, units = "in",
+  dpi = 600, compression = "lzw")
+```
+#Figure S4b: Plot delta_18O vs delta_alpha
+```{r 18O_Nalpha}
+x_col <- "delta_alpha"
+y_col <- "delta_18O"
+print(x_col)
+print(y_col)
+
+data[[x_col]] <- as.numeric(as.character(data[[x_col]]))
+data[[y_col]] <- as.numeric(as.character(data[[y_col]]))
+
+plot_data <- data[!is.na(data[[x_col]]) & !is.na(data[[y_col]]), ]
+
+p_18O_Nalpha <- ggplot(plot_data, aes(x = .data[[x_col]], y = .data[[y_col]])) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggpmisc::stat_poly_eq(
+    formula = y ~ x,
+    aes(label = after_stat(paste0("italic(", eq.label,")"))),
+    parse =TRUE,
+    size = 5
+  ) +
+  labs(
+    x = expression(bold(delta^15*N^alpha)),
+    y = expression(bold(delta^18*O ~ "(‰)"))
+  ) +
+  theme_classic () +
+  theme(
+    axis.title = element_text(size =18, face = "bold"),
+    axis.text = element_text(size = 14),
+    legend.title = element_blank(),
+    legend.text = element_text(size =18),
+    panel.border = element_rect( color = "black", fill = NA, linewidth =1),
+    axis.line = element_line(color = "black")
+  )
+print(p_18O_Nalpha)
+ggsave (
+  filename = here("graphs/isotopemaps/isotopemap_18O_Nalpha_92126.tiff"),
+  plot =p_18O_Nalpha,
+  width = 6, height = 4, units = "in",
+  dpi = 600, compression = "lzw")
+```
+#Figure S4c: Plot SP vs delta_N
+```{r SP_Nbulk}
+x_col <- "delta_N"
+y_col <- "SP"
+print(x_col)
+print(y_col)
+
+data[[x_col]] <- as.numeric(as.character(data[[x_col]]))
+data[[y_col]] <- as.numeric(as.character(data[[y_col]]))
+
+plot_data <- data[!is.na(data[[x_col]]) & !is.na(data[[y_col]]), ]
+
+p_SP_Nbulk <- ggplot(plot_data, aes(x = .data[[x_col]], y = .data[[y_col]])) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggpmisc::stat_poly_eq(
+    formula = y ~ x,
+    aes(label = after_stat(paste0("italic(", eq.label,")"))),
+    parse =TRUE,
+    size = 5
+  ) +
+  labs(
+    x = expression(bold(delta^15*N^bulk)),
+    y = expression(bold(delta^15*N^SP))
+  ) +
+  theme_classic () +
+  theme(
+    axis.title = element_text(size =18, face = "bold"),
+    axis.text = element_text(size = 14),
+    legend.title = element_blank(),
+    legend.text = element_text(size =18),
+    panel.border = element_rect( color = "black", fill = NA, linewidth =1),
+    axis.line = element_line(color = "black")
+  )
+print(p_SP_Nbulk)
+ggsave (
+  filename = here("graphs/isotopemaps/isotopemap_SP_Nbulk_92126.tiff"),
+  plot =p_SP_Nbulk,
+  width = 6, height = 4, units = "in",
+  dpi = 600, compression = "lzw")
+```
+#Figure S4d: SP vs delta_18O
+```{r SP_18O}
+x_col <- "delta_18O"
+y_col <- "SP"
+print(x_col)
+print(y_col)
+
+data[[x_col]] <- as.numeric(as.character(data[[x_col]]))
+data[[y_col]] <- as.numeric(as.character(data[[y_col]]))
+
+plot_data <- data[!is.na(data[[x_col]]) & !is.na(data[[y_col]]), ]
+
+p_SP_18O <- ggplot(plot_data, aes(x = .data[[x_col]], y = .data[[y_col]])) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggpmisc::stat_poly_eq(
+    formula = y ~ x,
+    aes(label = after_stat(paste0("italic(", eq.label,")"))),
+    parse =TRUE,
+    size = 5
+  ) +
+  labs(
+    x = expression(bold(delta^18*O ~ "(‰)")),
+    y = expression(bold(delta^15*N^SP))
+  ) +
+  theme_classic () +
+  theme(
+    axis.title = element_text(size =18, face = "bold"),
+    axis.text = element_text(size = 14),
+    legend.title = element_blank(),
+    legend.text = element_text(size =18),
+    panel.border = element_rect( color = "black", fill = NA, linewidth =1),
+    axis.line = element_line(color = "black")
+  )
+print(p_SP_18O)
+ggsave (
+  filename = here("graphs/isotopemaps/isotopemap_SP_18O_92126.tiff"),
+  plot =p_SP_18O,
+  width = 6, height = 4, units = "in",
+  dpi = 600, compression = "lzw")
+```
+#Figure S4a-d: Use this figure for publication
+```{r Fig_S4}
+fig <- egg::ggarrange(
+  p_18O_Nbulk, p_18O_Nalpha,
+  p_SP_Nbulk, p_SP_18O,
+  ncol = 2,
+  nrow = 2,
+  labels = c("(a)", "(b)", "(c)", "(d)")
+)
+print (fig)
+ggsave(
+  filename= here("graphs/isotopemaps/isotopemapping_allplots_92126.tiff"),
+  plot = fig,
+  width = 6, height = 6, units = "in",
+  dpi = 1200, compression = "lzw"
+)
+```
+
