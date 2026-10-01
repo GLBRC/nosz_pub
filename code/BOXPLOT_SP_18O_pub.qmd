@@ -243,4 +243,12 @@ ggsave (
   plot =p_kendallplot_mix,
   width = 8, height = 5, units = "in",
   dpi = 600, compression = "lzw")
+
+#Save as .tif
+ggsave (
+  filename = here("graphs/boxplot/Boxplot_SP_O_mix.tif"),
+  plot =p_kendallplot_mix,
+  width = 8, height = 5, units = "in",
+  dpi = 600, compression = "lzw")
+
 ```
