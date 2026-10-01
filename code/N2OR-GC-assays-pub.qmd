@@ -307,6 +307,9 @@ for (i in 1:n) {
 
 
 ggsave(plot_total_N2O_v_time_N_s0, filename = here("graphs/plot_total_N2O_v_time_N_s0.tiff"), height = 3.5, width = 6, units = "in")
+
+#Save as .png
+ggsave(plot_total_N2O_v_time_N_s0, filename = here("graphs/plot_total_N2O_v_time_N_s0.png"), height = 3.5, width = 6, units = "in")
 ```
 
 #Fit models to ECD data for N2OR1-3 using Total_N2O_umole as the dependent variable (y = A = Total_N2O_umole).
